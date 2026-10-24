@@ -1,0 +1,32 @@
+# Backups locais solicitados pelo usuário
+*_backup.*
+*_backup.txt
+*backup*
+
+# Ambientes e Segredos
+.env
+.env.*
+*.token
+*.pem
+*.key
+*.secret
+
+# Logs e arquivos temporários
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+temp_*
+scratch/
+.system_generated/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

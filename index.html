@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex INFINITY ∞ • Enciclopédia Suprema Pokémon</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Competitive Meta Data & Strategy Engine -->
+    <script src="competitive_meta.js"></script>
+    <!-- Encounter & Capture Location Engine -->
+    <script src="encounter_data.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Rajdhani (para números e cabeçalhos tecnológicos) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tech: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        pokedex: {
+                            red: '#DC0A2D',
+                            darkRed: '#8B0000',
+                            blue: '#28AAFD',
+                            screen: '#1a202c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        .pokeball-bg {
+            background-image: radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.05) 25%, transparent 25.5%);
+        }
+
+        /* Animação da Pokébola de Loading */
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-pokeball {
+            animation: spin-slow 2s linear infinite;
+        }
+
+        /* Pixelated rendering for retro/animated sprites */
+        .pixelated {
+            image-rendering: pixelated;
+        }
+
+        /* Transições suaves para barras de status */
+        .stat-bar-fill {
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-red-500 selection:text-white">
+
+    <!-- Top Header / Pokedex Bezel -->
+    <header class="bg-gradient-to-r from-red-700 via-red-600 to-red-800 border-b-4 border-red-950 shadow-xl sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <!-- Pokedex Lenses & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="relative flex items-center justify-center w-12 h-12 rounded-full bg-white p-1 shadow-inner">
+                    <div id="status-lens" class="w-full h-full rounded-full bg-cyan-400 border-2 border-cyan-200 shadow-[inset_0_0_12px_rgba(0,0,0,0.6)] relative overflow-hidden transition-colors duration-300">
+                        <div class="w-3 h-3 rounded-full bg-white opacity-70 absolute top-1.5 left-1.5"></div>
+                    </div>
+                </div>
+                <div class="flex space-x-1.5 self-start mt-1">
+                    <div class="w-3 h-3 rounded-full bg-red-400 border border-red-900 shadow"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-900 shadow"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-400 border border-green-900 shadow"></div>
+                </div>
+                <div class="pl-2">
+                    <div class="flex items-center space-x-1 mb-0.5">
+                        <span class="text-[9px] uppercase tracking-[0.25em] font-extrabold text-amber-300/90 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.2 rounded">Ultimate Edition</span>
+                    </div>
+                    <h1 class="font-tech text-2xl md:text-3xl font-extrabold tracking-wider uppercase text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] flex items-center gap-1.5">
+                        <span class="tracking-widest">Pokédex</span>
+                        <span class="bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-500 bg-clip-text text-transparent font-black tracking-widest drop-shadow-[0_0_15px_rgba(250,204,21,0.8)] animate-pulse">
+                            INFINITY
+                        </span>
+                        <span class="text-yellow-400 font-normal text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.9)]">∞</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Search Bar & Autocomplete -->
+            <div class="flex-1 max-w-md relative">
+                <form id="search-form" class="relative flex items-center">
+                    <input 
+                        type="text" 
+                        id="pokemon-search" 
+                        placeholder="Buscar por Nome ou Nº (ex: Charizard, 25, Gengar)..." 
+                        autocomplete="off"
+                        class="w-full bg-slate-900/90 text-white placeholder-slate-400 pl-4 pr-20 py-2.5 rounded-xl border-2 border-red-950/60 focus:border-yellow-400 focus:outline-none shadow-inner text-sm md:text-base transition"
+                    >
+                    <button type="button" id="random-btn" title="Pokémon Aleatório" class="absolute right-11 text-slate-400 hover:text-yellow-400 px-2 py-1 transition">
+                        <i class="fa-solid fa-dice text-lg"></i>
+                    </button>
+                    <button type="submit" class="absolute right-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition shadow">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </form>
+                <!-- Autocomplete Dropdown -->
+                <div id="autocomplete-list" class="hidden absolute left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-slate-700/50">
+                    <!-- Dynamic items -->
+                </div>
+            </div>
+
+            <!-- Quick Prev / Next Navigation -->
+            <div class="flex items-center space-x-2">
+                <button id="prev-btn" class="bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-xl border border-red-950/50 flex items-center space-x-1.5 text-sm font-medium transition disabled:opacity-40">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                    <span id="prev-label" class="hidden sm:inline">#---</span>
+                </button>
+                <div class="bg-slate-950/90 px-3 py-1.5 rounded-lg border border-slate-800 font-tech text-lg text-yellow-400 font-bold tracking-wider" id="current-id-badge">
+                    #0001
+                </div>
+                <button id="next-btn" class="bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-xl border border-red-950/50 flex items-center space-x-1.5 text-sm font-medium transition disabled:opacity-40">
+                    <span id="next-label" class="hidden sm:inline">#---</span>
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Suggestions Bar -->
+        <div class="bg-red-950/60 border-t border-red-900/40 px-4 py-1.5">
+            <div class="max-w-7xl mx-auto flex items-center space-x-2 overflow-x-auto no-scrollbar text-xs">
+                <span class="text-red-200 font-semibold whitespace-nowrap"><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i>Rápido:</span>
+                <button onclick="loadPokemon('1')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#1 Bulbasaur</button>
+                <button onclick="loadPokemon('6')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#6 Charizard</button>
+                <button onclick="loadPokemon('25')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#25 Pikachu</button>
+                <button onclick="loadPokemon('94')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#94 Gengar</button>
+                <button onclick="loadPokemon('133')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#133 Eevee</button>
+                <button onclick="loadPokemon('150')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#150 Mewtwo</button>
+                <button onclick="loadPokemon('248')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#248 Tyranitar</button>
+                <button onclick="loadPokemon('384')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#384 Rayquaza</button>
+                <button onclick="loadPokemon('448')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#448 Lucario</button>
+                <button onclick="loadPokemon('658')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#658 Greninja</button>
+                <button onclick="loadPokemon('887')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#887 Dragapult</button>
+                <button onclick="loadPokemon('1007')" class="px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100 transition whitespace-nowrap">#1007 Koraidon</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Error / Notification Banner -->
+    <div id="error-box" class="hidden max-w-7xl mx-auto mt-4 px-4 w-full">
+        <div class="bg-red-950/90 border border-red-500 text-red-200 px-4 py-3 rounded-xl flex items-center justify-between shadow-lg">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl"></i>
+                <span id="error-message">Pokémon não encontrado! Verifique o nome ou número digitado.</span>
+            </div>
+            <button onclick="document.getElementById('error-box').classList.add('hidden')" class="text-red-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+        
+        <!-- Global Loading Overlay -->
+        <div id="main-loader" class="hidden py-24 flex flex-col items-center justify-center space-y-4">
+            <div class="w-16 h-16 rounded-full border-4 border-slate-700 border-t-red-500 animate-spin"></div>
+            <p class="text-slate-400 font-medium animate-pulse">Acessando banco de dados da PokéAPI...</p>
+        </div>
+
+        <!-- Pokemon Data Grid -->
+        <div id="pokemon-content" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN: Profile, Visuals, Bio, Base Stats (5 cols on lg) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Main Visual Card -->
+                <div id="visual-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-xl pokeball-bg transition-colors duration-500">
+                    <!-- Top Info: Name, Genus, ID -->
+                    <div class="flex justify-between items-start z-10 relative">
+                        <div>
+                            <span id="poke-genus" class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">Pokémon Semente</span>
+                            <h2 id="poke-name" class="text-3xl font-extrabold capitalize text-white tracking-tight">Bulbasaur</h2>
+                        </div>
+                        <span id="poke-id" class="font-tech text-4xl font-bold text-slate-700/80 select-none">#0001</span>
+                    </div>
+
+                    <!-- Type Badges -->
+                    <div id="poke-types" class="flex flex-wrap gap-2 mt-3 z-10 relative">
+                        <!-- Rendered via JS -->
+                    </div>
+
+                    <!-- Alternative Forms & Varieties Bar -->
+                    <div id="poke-varieties-container" class="hidden mt-3 pt-3 border-t border-slate-800/80 z-10 relative">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5 flex items-center">
+                            <i class="fa-solid fa-shapes text-yellow-400 mr-1.5"></i> Formas e Variantes:
+                        </span>
+                        <div id="poke-varieties-list" class="flex flex-wrap gap-1.5">
+                            <!-- Rendered via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Sprite Showcase Display -->
+                    <div class="my-6 relative flex items-center justify-center h-56 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner group">
+                        <!-- Decorative Grid Lines -->
+                        <div class="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                        
+                        <img id="poke-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt="Pokemon Sprite" class="max-h-48 max-w-48 object-contain z-10 drop-shadow-[0_10px_15px_rgba(0,0,0,0.7)] transition-transform duration-300 group-hover:scale-105">
+                        
+                        <!-- Cry Audio Button -->
+                        <button id="cry-btn" title="Ouvir Grito (Cry) do Pokémon" class="absolute top-3 left-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white w-9 h-9 rounded-lg border border-slate-700 flex items-center justify-center transition shadow">
+                            <i class="fa-solid fa-volume-high text-sm"></i>
+                        </button>
+
+                        <!-- Sprite Controls (Artwork / Animated / Shiny) -->
+                        <div class="absolute bottom-3 inset-x-3 flex justify-center space-x-1.5 z-20">
+                            <button onclick="setSpriteMode('artwork')" id="btn-mode-artwork" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white shadow transition">
+                                <i class="fa-solid fa-image mr-1"></i>Oficial
+                            </button>
+                            <button onclick="setSpriteMode('home')" id="btn-mode-home" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                                <i class="fa-solid fa-cube mr-1"></i>3D Home
+                            </button>
+                            <button onclick="setSpriteMode('animated')" id="btn-mode-animated" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                                <i class="fa-solid fa-film mr-1"></i>Animado
+                            </button>
+                            <button onclick="toggleShiny()" id="btn-shiny" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-yellow-400 hover:bg-slate-700 border border-yellow-500/30 transition">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Shiny
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Flavor Text / Pokedex Description -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3.5 mb-4">
+                        <div class="flex items-center space-x-2 text-xs text-slate-400 mb-1">
+                            <i class="fa-solid fa-book-open text-red-400"></i>
+                            <span class="font-semibold uppercase tracking-wider">Registro da Pokédex</span>
+                        </div>
+                        <p id="poke-flavor" class="text-sm text-slate-300 italic leading-relaxed">
+                            Carregando descrição da espécie...
+                        </p>
+                    </div>
+
+                    <!-- Physical Metrics & Generation -->
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1"><i class="fa-solid fa-ruler-vertical mr-1 text-blue-400"></i>Altura</span>
+                            <span id="poke-height" class="font-tech text-xl font-bold text-white">0.7 m</span>
+                        </div>
+                        <div class="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1"><i class="fa-solid fa-weight-hanging mr-1 text-emerald-400"></i>Peso</span>
+                            <span id="poke-weight" class="font-tech text-xl font-bold text-white">6.9 kg</span>
+                        </div>
+                        <div class="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-xs text-slate-400 block mb-1"><i class="fa-solid fa-layer-group mr-1 text-purple-400"></i>Estreia</span>
+                            <span id="poke-gen" class="font-tech text-xl font-bold text-white">Gen I</span>
+                        </div>
+                    </div>
+
+                    <!-- Abilities Section -->
+                    <div class="mt-4">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center">
+                            <i class="fa-solid fa-star text-yellow-400 mr-1.5"></i> Habilidades (Abilities)
+                        </h3>
+                        <div id="poke-abilities" class="space-y-2">
+                            <!-- Dynamic Abilities with Descriptions -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base Stats Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold uppercase tracking-wider text-white flex items-center">
+                            <i class="fa-solid fa-chart-simple text-red-500 mr-2"></i> Status Base (Base Stats)
+                        </h3>
+                        <span id="stats-total" class="text-xs font-tech bg-slate-800 text-yellow-400 px-2.5 py-1 rounded-lg border border-slate-700 font-bold">
+                            TOTAL: 318
+                        </span>
+                    </div>
+
+                    <div id="poke-stats" class="space-y-3">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Type Defenses / Weaknesses Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold uppercase tracking-wider text-white flex items-center">
+                            <i class="fa-solid fa-shield-halved text-blue-400 mr-2"></i> Eficácia Defensiva (Fraquezas)
+                        </h3>
+                        <span class="text-[10px] font-tech bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Gen IX Matchups</span>
+                    </div>
+
+                    <div id="type-defenses-container" class="space-y-3">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Where to Find & How to Catch Card (Tabela de Localização por Jogo) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-bold uppercase tracking-wider text-white flex items-center">
+                            <i class="fa-solid fa-map-location-dot text-emerald-400 mr-2"></i> Onde Encontrar & Capturar
+                        </h3>
+                        <span id="encounter-games-count" class="text-[11px] font-tech bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700 font-semibold">
+                            Carregando...
+                        </span>
+                    </div>
+
+                    <!-- Unique Capture Guide Banner (Shown for Legendaries, Mythicals, or Unique Encounters like Snorlax, Mewtwo, etc.) -->
+                    <div id="unique-capture-guide" class="hidden mb-3 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/30 rounded-xl p-3">
+                        <div class="flex items-start space-x-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                <i class="fa-solid fa-crown text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider">Captura Especial & Única</h4>
+                                    <span class="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Lendário / Especial</span>
+                                </div>
+                                <p id="unique-capture-text" class="text-[11px] text-slate-300 mt-1 leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Game Bar -->
+                    <div class="flex items-center space-x-2 mb-3">
+                        <label for="encounter-game-filter" class="text-[11px] text-slate-400 font-semibold shrink-0">
+                            <i class="fa-solid fa-filter text-slate-500 mr-1"></i>Filtrar Jogo:
+                        </label>
+                        <select id="encounter-game-filter" onchange="filterEncountersByGame()" class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-emerald-500 transition">
+                            <option value="all">Todos os Jogos Disponíveis</option>
+                        </select>
+                    </div>
+
+                    <!-- Encounters List Container (Compact scrollable) -->
+                    <div id="encounters-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1 text-xs">
+                        <div class="text-center py-6 text-slate-500 text-xs">
+                            <i class="fa-solid fa-spinner fa-spin text-emerald-400 text-base mb-2 block"></i>
+                            Buscando rotas e métodos de captura...
+                        </div>
+                    </div>
+
+                    <!-- Unobtainable in Games Notice -->
+                    <div id="unobtainable-games-box" class="hidden mt-3 pt-2.5 border-t border-slate-800/80">
+                        <div class="text-[11px] text-slate-400 flex items-start space-x-1.5">
+                            <i class="fa-solid fa-circle-exclamation text-slate-500 mt-0.5 shrink-0"></i>
+                            <div class="w-full">
+                                <span class="font-semibold text-slate-300">Ausente na Natureza em:</span>
+                                <div id="unobtainable-games-text" class="text-slate-400 block mt-1 flex flex-wrap gap-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Advanced Moves Explorer & Competitive Meta (7 cols on lg) -->
+            <div class="lg:col-span-7 flex flex-col">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex-1 flex flex-col">
+                    
+                    <!-- Top Navigation Tabs (Moveset vs Competitive Meta) -->
+                    <div class="flex items-center space-x-2 pb-4 mb-3 border-b border-slate-800">
+                        <button id="view-tab-moves" onclick="switchRightView('moves')" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-red-600 text-white shadow">
+                            <i class="fa-solid fa-burst"></i>
+                            <span>Golpes & Máquinas</span>
+                        </button>
+                        <button id="view-tab-meta" onclick="switchRightView('meta')" class="hidden flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-slate-800 text-yellow-400 hover:bg-slate-700 border border-yellow-500/30">
+                            <i class="fa-solid fa-trophy text-yellow-400"></i>
+                            <span>Meta Competitivo & Guia</span>
+                            <span class="px-1.5 py-0.2 rounded bg-yellow-400/20 text-yellow-300 text-[10px] font-black">PRO</span>
+                        </button>
+                    </div>
+
+                    <!-- VIEW 1: MOVESET EXPLORER -->
+                    <div id="moves-view-container" class="flex-1 flex flex-col">
+                    
+                    <!-- Moves Header -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fa-solid fa-burst text-red-500 mr-2.5"></i> Enciclopédia de Golpes (Moveset)
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                Consulte todos os golpes aprendidos por geração, versão do jogo, nível, máquinas (TM/HM) e efeito detalhado.
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="moves-count-badge" class="bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold px-3 py-1.5 rounded-xl">
+                                0 golpes encontrados
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Filters Toolbar -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
+                        <!-- Version Group / Game Selector -->
+                        <div>
+                            <label for="version-filter" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                <i class="fa-solid fa-gamepad mr-1 text-indigo-400"></i> Jogo / Geração:
+                            </label>
+                            <select id="version-filter" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500 transition">
+                                <option value="all">Todas as Gerações / Todos os Jogos</option>
+                                <!-- Populated dynamically based on Pokemon's available games -->
+                            </select>
+                        </div>
+
+                        <!-- Search inside moves -->
+                        <div>
+                            <label for="move-search" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                <i class="fa-solid fa-filter mr-1 text-emerald-400"></i> Filtrar Golpe por Nome:
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    id="move-search" 
+                                    placeholder="Ex: Flamethrower, Tackle, Ice Beam..." 
+                                    class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition"
+                                >
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Learn Method Tabs -->
+                    <div class="flex flex-wrap gap-1.5 pb-4 border-b border-slate-800" id="method-tabs">
+                        <button data-method="level-up" class="method-tab active-tab flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 bg-red-600 text-white shadow">
+                            <i class="fa-solid fa-arrow-up-right-dots"></i>
+                            <span>Por Nível (Level-Up)</span>
+                            <span id="count-level-up" class="ml-1 px-1.5 py-0.2 bg-black/30 rounded text-[10px]">0</span>
+                        </button>
+                        <button data-method="machine" class="method-tab flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            <i class="fa-solid fa-compact-disc"></i>
+                            <span>TM / HM (Máquinas)</span>
+                            <span id="count-machine" class="ml-1 px-1.5 py-0.2 bg-black/30 rounded text-[10px]">0</span>
+                        </button>
+                        <button data-method="egg" class="method-tab flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            <i class="fa-solid fa-egg"></i>
+                            <span>Egg Moves (Criação)</span>
+                            <span id="count-egg" class="ml-1 px-1.5 py-0.2 bg-black/30 rounded text-[10px]">0</span>
+                        </button>
+                        <button data-method="tutor" class="method-tab flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span>Tutor</span>
+                            <span id="count-tutor" class="ml-1 px-1.5 py-0.2 bg-black/30 rounded text-[10px]">0</span>
+                        </button>
+                        <button data-method="all" class="method-tab flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            <i class="fa-solid fa-list-ul"></i>
+                            <span>Todos</span>
+                            <span id="count-all" class="ml-1 px-1.5 py-0.2 bg-black/30 rounded text-[10px]">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Category & Damage Legend Bar -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 py-2.5 px-3 bg-slate-950/60 rounded-xl my-3 text-xs text-slate-400 border border-slate-800/60">
+                        <div class="flex items-center space-x-4">
+                            <span class="font-semibold text-slate-300">Categorias de Golpe:</span>
+                            <span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1.5"></span><i class="fa-solid fa-hand-fist text-orange-400 mr-1"></i>Físico (Physical)</span>
+                            <span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 mr-1.5"></span><i class="fa-solid fa-wand-sparkles text-indigo-400 mr-1"></i>Especial (Special)</span>
+                            <span class="inline-flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 mr-1.5"></span><i class="fa-solid fa-yin-yang text-slate-300 mr-1"></i>Efeito / Status</span>
+                        </div>
+                        <div id="batch-loading-indicator" class="hidden flex items-center space-x-2 text-yellow-400 font-medium">
+                            <i class="fa-solid fa-circle-notch animate-spin"></i>
+                            <span>Carregando detalhes dos golpes...</span>
+                        </div>
+                    </div>
+
+                    <!-- Moves List / Table Container -->
+                    <div id="moves-list-container" class="flex-1 overflow-y-auto max-h-[680px] pr-1 space-y-2.5">
+                        <!-- Move cards dynamically populated here -->
+                    </div>
+
+                    <!-- Load More Button (for pagination when viewing huge move lists) -->
+                    <div id="load-more-container" class="hidden pt-4 mt-2 border-t border-slate-800 text-center">
+                        <button id="load-more-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs px-5 py-2.5 rounded-xl border border-slate-700 transition inline-flex items-center space-x-2">
+                            <i class="fa-solid fa-angles-down"></i>
+                            <span>Carregar mais golpes (<span id="remaining-moves-count">0</span> restantes)</span>
+                        </button>
+                    </div>
+
+                    </div>
+                    <!-- END OF VIEW 1: MOVESET EXPLORER -->
+
+                    <!-- VIEW 2: COMPETITIVE META & STRATEGY GUIDE (Exibida apenas se o Pokémon tiver dados competitivos) -->
+                    <div id="meta-view-container" class="hidden flex-1 flex flex-col space-y-4">
+                        <div id="meta-header" class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <div id="meta-sets-list" class="space-y-5 overflow-y-auto max-h-[660px] pr-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                    <!-- END OF VIEW 2: COMPETITIVE META -->
+
+                </div>
+            </div>
+
+            <!-- FULL WIDTH: Evolution Chain Card (12 cols on lg) -->
+            <div class="lg:col-span-12">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-800">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fa-solid fa-dna text-emerald-400 mr-2.5"></i> Linha Evolutiva (Evolution Chain)
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                Estágios de evolução, requisitos de nível, pedras evolutivas e condições especiais.
+                            </p>
+                        </div>
+                        <div id="evo-loading" class="hidden flex items-center space-x-2 text-emerald-400 text-xs">
+                            <i class="fa-solid fa-circle-notch animate-spin"></i>
+                            <span>Carregando evolução...</span>
+                        </div>
+                    </div>
+
+                    <div id="evolution-chain-container" class="flex flex-col md:flex-row items-center justify-center gap-4 py-4 overflow-x-auto min-h-[140px]">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900/95 border-t border-slate-800 py-6 px-4 text-xs text-slate-400 mt-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                    <i class="fa-solid fa-infinity text-lg text-yellow-400"></i>
+                </div>
+                <div class="text-left">
+                    <p class="text-sm font-extrabold text-white tracking-wider font-tech flex items-center gap-1.5">
+                        <span>POKÉDEX</span>
+                        <span class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 bg-clip-text text-transparent font-black">INFINITY ∞</span>
+                    </p>
+                    <p class="text-xs text-slate-300">
+                        Criado e desenvolvido por <strong class="text-yellow-400 font-bold tracking-wide">Gabriel Medeiros</strong> &bull; Todos os direitos reservados
+                    </p>
+                </div>
+            </div>
+
+            <div class="text-center md:text-right text-[11px] text-slate-500 space-y-0.5">
+                <p>Dados oficiais em tempo real fornecidos pela <a href="https://pokeapi.co/" target="_blank" class="text-red-400 hover:underline font-medium">PokéAPI v2</a>.</p>
+                <p>Enciclopédia de Pokémon da Gen I (Kanto) à Gen IX (Paldea).</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Audio Player for Pokemon Cry -->
+    <audio id="poke-cry-audio" class="hidden"></audio>
+
+    <!-- Application JavaScript -->
+    <script>
+        // ==========================================
+        // TRANSLATIONS & CONSTANTS (PORTUGUESE)
+        // ==========================================
+        const TYPE_DATA = {
+            normal:   { name: 'Normal',   bg: 'bg-stone-500',   border: 'border-stone-400',   text: 'text-white', hex: '#A8A77A' },
+            fire:     { name: 'Fogo',     bg: 'bg-orange-600',  border: 'border-orange-400',  text: 'text-white', hex: '#EE8130' },
+            water:    { name: 'Água',     bg: 'bg-blue-600',    border: 'border-blue-400',    text: 'text-white', hex: '#6390F0' },
+            electric: { name: 'Elétrico', bg: 'bg-amber-500',   border: 'border-amber-300',   text: 'text-slate-950', hex: '#F7D02C' },
+            grass:    { name: 'Planta',   bg: 'bg-emerald-600', border: 'border-emerald-400', text: 'text-white', hex: '#7AC74C' },
+            ice:      { name: 'Gelo',     bg: 'bg-cyan-500',    border: 'border-cyan-300',    text: 'text-slate-950', hex: '#96D9D6' },
+            fighting: { name: 'Lutador',  bg: 'bg-red-700',     border: 'border-red-500',     text: 'text-white', hex: '#C22E28' },
+            poison:   { name: 'Venenoso', bg: 'bg-purple-600',  border: 'border-purple-400',  text: 'text-white', hex: '#A33EA1' },
+            ground:   { name: 'Terrestre',bg: 'bg-yellow-700',  border: 'border-yellow-500',  text: 'text-white', hex: '#E2BF65' },
+            flying:   { name: 'Voador',   bg: 'bg-indigo-500',  border: 'border-indigo-300',  text: 'text-white', hex: '#A98FF3' },
+            psychic:  { name: 'Psíquico', bg: 'bg-pink-600',    border: 'border-pink-400',    text: 'text-white', hex: '#F95587' },
+            bug:      { name: 'Inseto',   bg: 'bg-lime-600',    border: 'border-lime-400',    text: 'text-white', hex: '#A6B91A' },
+            rock:     { name: 'Pedra',    bg: 'bg-yellow-800',  border: 'border-yellow-600',  text: 'text-white', hex: '#B6A136' },
+            ghost:    { name: 'Fantasma', bg: 'bg-violet-800',  border: 'border-violet-500',  text: 'text-white', hex: '#735797' },
+            dragon:   { name: 'Dragão',   bg: 'bg-indigo-700',  border: 'border-indigo-400',  text: 'text-white', hex: '#6F35FC' },
+            dark:     { name: 'Sombrio',  bg: 'bg-neutral-800', border: 'border-neutral-500', text: 'text-white', hex: '#705746' },
+            steel:    { name: 'Aço',      bg: 'bg-slate-500',   border: 'border-slate-300',   text: 'text-white', hex: '#B7B7CE' },
+            fairy:    { name: 'Fada',     bg: 'bg-rose-400',    border: 'border-rose-300',    text: 'text-slate-950', hex: '#D685AD' },
+            stellar:  { name: 'Estelar',  bg: 'bg-teal-500',    border: 'border-teal-300',    text: 'text-white', hex: '#40B5A5' },
+            unknown:  { name: '???',      bg: 'bg-slate-700',   border: 'border-slate-500',   text: 'text-white', hex: '#68A090' }
+        };
+
+        const TYPE_DEFENSES = {
+            normal:   { fighting: 2, ghost: 0 },
+            fire:     { water: 2, ground: 2, rock: 2, fire: 0.5, grass: 0.5, ice: 0.5, bug: 0.5, steel: 0.5, fairy: 0.5 },
+            water:    { electric: 2, grass: 2, fire: 0.5, water: 0.5, ice: 0.5, steel: 0.5 },
+            electric: { ground: 2, electric: 0.5, flying: 0.5, steel: 0.5 },
+            grass:    { fire: 2, ice: 2, poison: 2, flying: 2, bug: 2, water: 0.5, electric: 0.5, grass: 0.5, ground: 0.5 },
+            ice:      { fire: 2, fighting: 2, rock: 2, steel: 2, ice: 0.5 },
+            fighting: { flying: 2, psychic: 2, fairy: 2, bug: 0.5, rock: 0.5, dark: 0.5 },
+            poison:   { ground: 2, psychic: 2, grass: 0.5, fighting: 0.5, poison: 0.5, bug: 0.5, fairy: 0.5 },
+            ground:   { water: 2, grass: 2, ice: 2, electric: 0, poison: 0.5, rock: 0.5 },
+            flying:   { electric: 2, ice: 2, rock: 2, ground: 0, grass: 0.5, fighting: 0.5, bug: 0.5 },
+            psychic:  { bug: 2, ghost: 2, dark: 2, fighting: 0.5, psychic: 0.5 },
+            bug:      { fire: 2, flying: 2, rock: 2, grass: 0.5, fighting: 0.5, ground: 0.5 },
+            rock:     { water: 2, grass: 2, fighting: 2, ground: 2, steel: 2, normal: 0.5, fire: 0.5, poison: 0.5, flying: 0.5 },
+            ghost:    { ghost: 2, dark: 2, normal: 0, fighting: 0, poison: 0.5, bug: 0.5 },
+            dragon:   { ice: 2, dragon: 2, fairy: 2, fire: 0.5, water: 0.5, electric: 0.5, grass: 0.5 },
+            dark:     { fighting: 2, bug: 2, fairy: 2, psychic: 0, ghost: 0.5, dark: 0.5 },
+            steel:    { fire: 2, fighting: 2, ground: 2, poison: 0, normal: 0.5, grass: 0.5, ice: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 0.5, dragon: 0.5, steel: 0.5, fairy: 0.5 },
+            fairy:    { poison: 2, steel: 2, dragon: 0, fighting: 0.5, bug: 0.5, dark: 0.5 }
+        };
+
+        const ITEM_TRANSLATIONS = {
+            'fire-stone': 'Pedra do Fogo',
+            'water-stone': 'Pedra da Água',
+            'thunder-stone': 'Pedra do Trovão',
+            'leaf-stone': 'Pedra da Planta',
+            'moon-stone': 'Pedra da Lua',
+            'sun-stone': 'Pedra do Sol',
+            'shiny-stone': 'Pedra Brilhante',
+            'dusk-stone': 'Pedra do Anoitecer',
+            'dawn-stone': 'Pedra do Alvorecer',
+            'ice-stone': 'Pedra do Gelo',
+            'oval-stone': 'Pedra Oval',
+            'kings-rock': 'Rocha do Rei',
+            'metal-coat': 'Revestimento Metálico',
+            'dragon-scale': 'Escama de Dragão',
+            'upgrade': 'Upgrade',
+            'dubious-disc': 'Disco Duvidoso',
+            'protector': 'Protetor',
+            'electirizer': 'Eletrizador',
+            'magmarizer': 'Magmarizador',
+            'reaper-cloth': 'Manta Noturna',
+            'prism-scale': 'Escama de Prisma',
+            'whipped-dream': 'Doce dos Sonhos',
+            'sachet': 'Sachê Perfumado',
+            'razor-claw': 'Garra Afiada',
+            'razor-fang': 'Presa Afiada',
+            'sweet-apple': 'Maçã Doce',
+            'tart-apple': 'Maçã Ácida',
+            'cracked-pot': 'Bule Rachado',
+            'chipped-pot': 'Bule Lascado',
+            'galarica-cuff': 'Braçadeira Galárica',
+            'galarica-wreath': 'Coroa Galárica',
+            'black-augurite': 'Augurita Negra',
+            'peat-block': 'Bloco de Turfa',
+            'auspicious-armor': 'Armadura Auspiciosa',
+            'malicious-armor': 'Armadura Maliciosa',
+            'syrupy-apple': 'Maçã Melada',
+            'unremarkable-teacup': 'Xícara Comum',
+            'masterpiece-teacup': 'Xícara de Obra-Prima'
+        };
+
+        const STAT_NAMES = {
+            'hp':              { label: 'HP',        short: 'HP',      color: 'bg-red-500' },
+            'attack':          { label: 'Ataque',    short: 'ATK',     color: 'bg-orange-500' },
+            'defense':         { label: 'Defesa',    short: 'DEF',     color: 'bg-amber-400' },
+            'special-attack':  { label: 'Atq. Esp.', short: 'SP. ATK', color: 'bg-blue-500' },
+            'special-defense': { label: 'Def. Esp.', short: 'SP. DEF', color: 'bg-emerald-500' },
+            'speed':           { label: 'Velocid.',  short: 'SPD',     color: 'bg-pink-500' }
+        };
+
+        const VERSION_GROUP_INFO = {
+            'red-blue':                      { label: 'Red / Blue', gen: 'Geração I', order: 1 },
+            'yellow':                        { label: 'Yellow', gen: 'Geração I', order: 2 },
+            'gold-silver':                   { label: 'Gold / Silver', gen: 'Geração II', order: 3 },
+            'crystal':                       { label: 'Crystal', gen: 'Geração II', order: 4 },
+            'ruby-sapphire':                 { label: 'Ruby / Sapphire', gen: 'Geração III', order: 5 },
+            'emerald':                       { label: 'Emerald', gen: 'Geração III', order: 6 },
+            'firered-leafgreen':             { label: 'FireRed / LeafGreen', gen: 'Geração III', order: 7 },
+            'colosseum':                     { label: 'Colosseum', gen: 'Geração III', order: 8 },
+            'xd':                            { label: 'XD: Gale of Darkness', gen: 'Geração III', order: 9 },
+            'diamond-pearl':                 { label: 'Diamond / Pearl', gen: 'Geração IV', order: 10 },
+            'platinum':                      { label: 'Platinum', gen: 'Geração IV', order: 11 },
+            'heartgold-soulsilver':          { label: 'HeartGold / SoulSilver', gen: 'Geração IV', order: 12 },
+            'black-white':                   { label: 'Black / White', gen: 'Geração V', order: 13 },
+            'black-2-white-2':               { label: 'Black 2 / White 2', gen: 'Geração V', order: 14 },
+            'x-y':                           { label: 'X / Y', gen: 'Geração VI', order: 15 },
+            'omega-ruby-alpha-sapphire':     { label: 'Omega Ruby / Alpha Sapphire', gen: 'Geração VI', order: 16 },
+            'sun-moon':                      { label: 'Sun / Moon', gen: 'Geração VII', order: 17 },
+            'ultra-sun-ultra-moon':          { label: 'Ultra Sun / Ultra Moon', gen: 'Geração VII', order: 18 },
+            'lets-go-pikachu-lets-go-eevee': { label: "Let's Go Pikachu / Eevee", gen: 'Geração VII', order: 19 },
+            'sword-shield':                  { label: 'Sword / Shield', gen: 'Geração VIII', order: 20 },
+            'the-isle-of-armor':             { label: 'SwSh: Isle of Armor', gen: 'Geração VIII', order: 21 },
+            'the-crown-tundra':              { label: 'SwSh: Crown Tundra', gen: 'Geração VIII', order: 22 },
+            'brilliant-diamond-and-shining-pearl': { label: 'Brilliant Diamond / Shining Pearl', gen: 'Geração VIII', order: 23 },
+            'legends-arceus':                { label: 'Legends: Arceus', gen: 'Geração VIII', order: 24 },
+            'scarlet-violet':                { label: 'Scarlet / Violet', gen: 'Geração IX', order: 25 },
+            'the-teal-mask':                 { label: 'SV: The Teal Mask', gen: 'Geração IX', order: 26 },
+            'the-indigo-disk':               { label: 'SV: The Indigo Disk', gen: 'Geração IX', order: 27 }
+        };
+
+        const METHOD_LABELS = {
+            'level-up':        { label: 'Nível', icon: 'fa-arrow-up-right-dots', badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+            'machine':         { label: 'TM / HM', icon: 'fa-compact-disc', badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+            'egg':             { label: 'Egg Move', icon: 'fa-egg', badgeClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40' },
+            'tutor':           { label: 'Tutor', icon: 'fa-graduation-cap', badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+            'stadium-surfing-pikachu': { label: 'Especial', icon: 'fa-star', badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+            'light-ball-egg':  { label: 'Light Ball Egg', icon: 'fa-bolt', badgeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+            'form-change':     { label: 'Mudança Forma', icon: 'fa-rotate', badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+            'zygarde-cube':    { label: 'Cubo Zygarde', icon: 'fa-cube', badgeClass: 'bg-lime-500/20 text-lime-300 border-lime-500/40' }
+        };
+
+        const DAMAGE_CLASS_INFO = {
+            'physical': {
+                label: 'Físico',
+                icon: 'fa-hand-fist',
+                classes: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+                desc: 'Dano baseado em Ataque e Defesa física'
+            },
+            'special': {
+                label: 'Especial',
+                icon: 'fa-wand-sparkles',
+                classes: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+                desc: 'Dano baseado em Atq. Especial e Def. Especial'
+            },
+            'status': {
+                label: 'Efeito',
+                icon: 'fa-yin-yang',
+                classes: 'bg-slate-600/30 text-slate-300 border-slate-500/40',
+                desc: 'Não causa dano direto (altera atributos, clima ou status)'
+            }
+        };
+
+        const GENERATION_ROMAN = {
+            'generation-i': 'Gen I (Kanto)',
+            'generation-ii': 'Gen II (Johto)',
+            'generation-iii': 'Gen III (Hoenn)',
+            'generation-iv': 'Gen IV (Sinnoh)',
+            'generation-v': 'Gen V (Unova)',
+            'generation-vi': 'Gen VI (Kalos)',
+            'generation-vii': 'Gen VII (Alola)',
+            'generation-viii': 'Gen VIII (Galar)',
+            'generation-ix': 'Gen IX (Paldea)'
+        };
+
+        // ==========================================
+        // APPLICATION STATE & CACHES
+        // ==========================================
+        let allPokemonIndex = []; // List of { name, id } for autocomplete
+        let currentPokemon = null;
+        let currentSpecies = null;
+        
+        // Sprite state
+        let spriteMode = 'artwork'; // 'artwork' | 'home' | 'animated'
+        let isShiny = false;
+
+        // Moves state
+        let currentVersionFilter = 'all';
+        let currentMethodFilter = 'level-up';
+        let currentMoveSearch = '';
+        let filteredMovesList = [];
+        let displayedMovesCount = 0;
+        const MOVES_PAGE_SIZE = 25;
+
+        // Memory caches to avoid redundant API requests
+        const pokemonCache = new Map();
+        const speciesCache = new Map();
+        const evolutionCache = new Map();
+        const moveCache = new Map();
+        const abilityCache = new Map();
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            initAutocompleteList();
+            setupEventListeners();
+            loadPokemon('1'); // Start with Bulbasaur (#1)
+        });
+
+        async function initAutocompleteList() {
+            try {
+                const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+                const data = await res.json();
+                allPokemonIndex = data.results.map((item, idx) => ({
+                    name: item.name,
+                    id: idx + 1
+                }));
+            } catch (e) {
+                console.warn('Não foi possível pré-carregar índice de autocompletar:', e);
+            }
+        }
+
+        function setupEventListeners() {
+            // Search Form
+            const form = document.getElementById('search-form');
+            const input = document.getElementById('pokemon-search');
+            const autoList = document.getElementById('autocomplete-list');
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const query = input.value.trim().toLowerCase();
+                if (query) {
+                    autoList.classList.add('hidden');
+                    loadPokemon(query);
+                }
+            });
+
+            // Autocomplete Input
+            input.addEventListener('input', () => {
+                const val = input.value.trim().toLowerCase();
+                if (!val || allPokemonIndex.length === 0) {
+                    autoList.classList.add('hidden');
+                    return;
+                }
+
+                const matches = allPokemonIndex.filter(p => 
+                    p.name.includes(val) || String(p.id) === val || String(p.id).startsWith(val)
+                ).slice(0, 8);
+
+                if (matches.length === 0) {
+                    autoList.classList.add('hidden');
+                    return;
+                }
+
+                autoList.innerHTML = matches.map(p => `
+                    <button type="button" onclick="selectAutocomplete('${p.id}')" class="w-full px-4 py-2.5 text-left hover:bg-slate-700/70 flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" class="w-8 h-8 object-contain" loading="lazy" onerror="this.style.display='none'">
+                            <span class="capitalize font-medium text-white">${formatPokemonName(p.name)}</span>
+                        </div>
+                        <span class="font-tech text-slate-400 font-bold">#${String(p.id).padStart(4, '0')}</span>
+                    </button>
+                `).join('');
+                autoList.classList.remove('hidden');
+            });
+
+            // Hide autocomplete on click outside
+            document.addEventListener('click', (e) => {
+                if (!form.contains(e.target) && !autoList.contains(e.target)) {
+                    autoList.classList.add('hidden');
+                }
+            });
+
+            // Random Pokemon Button
+            document.getElementById('random-btn').addEventListener('click', () => {
+                const randomId = Math.floor(Math.random() * 1025) + 1;
+                loadPokemon(String(randomId));
+            });
+
+            // Prev / Next Buttons (uses base species ID so alternate forms stay in sequence)
+            document.getElementById('prev-btn').addEventListener('click', () => {
+                const baseId = currentSpecies ? currentSpecies.id : (currentPokemon ? currentPokemon.id : 1);
+                if (baseId > 1) {
+                    loadPokemon(String(baseId - 1));
+                }
+            });
+            document.getElementById('next-btn').addEventListener('click', () => {
+                const baseId = currentSpecies ? currentSpecies.id : (currentPokemon ? currentPokemon.id : 1);
+                if (baseId < 1025) {
+                    loadPokemon(String(baseId + 1));
+                }
+            });
+
+            // Cry Audio Button
+            document.getElementById('cry-btn').addEventListener('click', () => {
+                const audio = document.getElementById('poke-cry-audio');
+                if (audio.src) {
+                    audio.volume = 0.35;
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                }
+            });
+
+            // Version Group Filter
+            document.getElementById('version-filter').addEventListener('change', (e) => {
+                currentVersionFilter = e.target.value;
+                updateMethodCounts();
+                processAndRenderMoves();
+            });
+
+            // Move Search Input
+            document.getElementById('move-search').addEventListener('input', (e) => {
+                currentMoveSearch = e.target.value.trim().toLowerCase();
+                processAndRenderMoves();
+            });
+
+            // Method Filter Tabs
+            document.querySelectorAll('.method-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.method-tab').forEach(b => {
+                        b.classList.remove('bg-red-600', 'text-white', 'shadow');
+                        b.classList.add('bg-slate-800', 'text-slate-300');
+                    });
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                    btn.classList.add('bg-red-600', 'text-white', 'shadow');
+
+                    currentMethodFilter = btn.getAttribute('data-method');
+                    processAndRenderMoves();
+                });
+            });
+
+            // Load More Moves Button
+            document.getElementById('load-more-btn').addEventListener('click', () => {
+                renderNextMoveBatch();
+            });
+        }
+
+        function selectAutocomplete(id) {
+            document.getElementById('autocomplete-list').classList.add('hidden');
+            document.getElementById('pokemon-search').value = '';
+            loadPokemon(id);
+        }
+
+        // ==========================================
+        // CORE POKEMON LOADING
+        // ==========================================
+        async function loadPokemon(query) {
+            const cleanQuery = String(query).trim().toLowerCase();
+            if (!cleanQuery) return;
+
+            setLoadingState(true);
+            document.getElementById('error-box').classList.add('hidden');
+
+            try {
+                // 1. Fetch main Pokemon data
+                let pokemon;
+                if (pokemonCache.has(cleanQuery)) {
+                    pokemon = pokemonCache.get(cleanQuery);
+                } else {
+                    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(cleanQuery)}`);
+                    if (!res.ok) throw new Error('Pokémon não encontrado');
+                    pokemon = await res.json();
+                    pokemonCache.set(String(pokemon.id), pokemon);
+                    pokemonCache.set(pokemon.name, pokemon);
+                }
+                currentPokemon = pokemon;
+
+                // 2. Fetch Species data (for genus, generation, flavor text, evolution, varieties)
+                let species = null;
+                try {
+                    const speciesUrl = pokemon.species.url;
+                    if (speciesCache.has(speciesUrl)) {
+                        species = speciesCache.get(speciesUrl);
+                    } else {
+                        const sRes = await fetch(speciesUrl);
+                        if (sRes.ok) {
+                            species = await sRes.json();
+                            speciesCache.set(speciesUrl, species);
+                            speciesCache.set(String(species.id), species);
+                            speciesCache.set(species.name, species);
+                        }
+                    }
+                } catch (sErr) {
+                    console.warn('Erro ao buscar espécie:', sErr);
+                }
+                currentSpecies = species;
+
+                // 3. Render Profile, Variations, Stats, Type Defenses, Abilities, Evolution Chain & Moves
+                renderPokemonProfile(pokemon, species);
+                renderVarieties(species, pokemon.name);
+                renderBaseStats(pokemon.stats);
+                renderTypeDefenses(pokemon.types);
+                renderAbilities(pokemon.abilities);
+                renderEvolutionChain(species);
+                setupVersionFilterOptions(pokemon.moves);
+                updateMethodCounts();
+                processAndRenderMoves();
+                await checkAndRenderCompetitiveTab(pokemon);
+                await renderPokemonEncounters(pokemon, species);
+
+                setLoadingState(false);
+
+            } catch (err) {
+                console.error(err);
+                setLoadingState(false);
+                const errBox = document.getElementById('error-box');
+                document.getElementById('error-message').textContent = `Não foi possível encontrar o Pokémon "${query}". Tente outro nome ou ID (1 a 1025).`;
+                errBox.classList.remove('hidden');
+            }
+        }
+
+        function setLoadingState(isLoading) {
+            const loader = document.getElementById('main-loader');
+            const content = document.getElementById('pokemon-content');
+            const lens = document.getElementById('status-lens');
+
+            if (isLoading) {
+                loader.classList.remove('hidden');
+                content.classList.add('opacity-40', 'pointer-events-none');
+                lens.classList.replace('bg-cyan-400', 'bg-yellow-400');
+                lens.classList.add('animate-pulse');
+            } else {
+                loader.classList.add('hidden');
+                content.classList.remove('opacity-40', 'pointer-events-none');
+                lens.classList.replace('bg-yellow-400', 'bg-cyan-400');
+                lens.classList.remove('animate-pulse');
+            }
+        }
+
+        // ==========================================
+        // RENDER PROFILE, SPRITES, STATS & ABILITIES
+        // ==========================================
+        function renderPokemonProfile(pokemon, species) {
+            const baseId = species ? species.id : pokemon.id;
+            const formattedId = `#${String(baseId).padStart(4, '0')}`;
+            document.getElementById('current-id-badge').textContent = formattedId;
+            document.getElementById('poke-id').textContent = formattedId;
+
+            // Form-aware Pokémon Title
+            let displayName = formatPokemonName(pokemon.name);
+            if (species && pokemon.name.toLowerCase() !== species.name.toLowerCase()) {
+                const formLabel = formatVarietyLabel(pokemon.name, species.name);
+                displayName = `${formatPokemonName(species.name)} <span class="text-yellow-400 text-lg md:text-xl font-bold tracking-normal">(${formLabel})</span>`;
+            }
+            document.getElementById('poke-name').innerHTML = displayName;
+
+            // Prev / Next Navigation state based on base national ID
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            prevBtn.disabled = baseId <= 1;
+            nextBtn.disabled = baseId >= 1025;
+            document.getElementById('prev-label').textContent = baseId > 1 ? `#${baseId - 1}` : '#---';
+            document.getElementById('next-label').textContent = baseId < 1025 ? `#${baseId + 1}` : '#---';
+
+            // Types
+            const typesContainer = document.getElementById('poke-types');
+            typesContainer.innerHTML = pokemon.types.map(t => {
+                const tInfo = TYPE_DATA[t.type.name] || TYPE_DATA.unknown;
+                return `
+                    <span class="${tInfo.bg} ${tInfo.text} border ${tInfo.border} px-3.5 py-1 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm">
+                        ${tInfo.name}
+                    </span>
+                `;
+            }).join('');
+
+            // Physical Height & Weight
+            document.getElementById('poke-height').textContent = `${(pokemon.height / 10).toFixed(1)} m`;
+            document.getElementById('poke-weight').textContent = `${(pokemon.weight / 10).toFixed(1)} kg`;
+
+            // Cry Audio
+            const cryAudio = document.getElementById('poke-cry-audio');
+            const cryBtn = document.getElementById('cry-btn');
+            if (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) {
+                cryAudio.src = pokemon.cries.latest || pokemon.cries.legacy;
+                cryBtn.classList.remove('hidden');
+            } else {
+                cryBtn.classList.add('hidden');
+            }
+
+            // Species Details (Genus, Flavor Text, Generation)
+            if (species) {
+                // Genus (prefer pt, es, or en)
+                const genusEntry = species.genera.find(g => g.language.name === 'pt-BR' || g.language.name === 'pt')
+                                || species.genera.find(g => g.language.name === 'en');
+                document.getElementById('poke-genus').textContent = genusEntry ? genusEntry.genus : 'Espécie Pokémon';
+
+                // Generation
+                const genKey = species.generation?.name || '';
+                document.getElementById('poke-gen').textContent = GENERATION_ROMAN[genKey] ? GENERATION_ROMAN[genKey].split(' ')[0] + ' ' + GENERATION_ROMAN[genKey].split(' ')[1] : 'Desconhecida';
+
+                // Flavor Text (prefer pt, then es, then en)
+                const flavorEntry = species.flavor_text_entries.find(f => f.language.name === 'pt-BR' || f.language.name === 'pt')
+                                 || species.flavor_text_entries.find(f => f.language.name === 'en');
+                if (flavorEntry) {
+                    const cleanText = flavorEntry.flavor_text.replace(/[\n\f\r]/g, ' ');
+                    document.getElementById('poke-flavor').textContent = `"${cleanText}"`;
+                } else {
+                    document.getElementById('poke-flavor').textContent = 'Sem descrição registrada para esta espécie.';
+                }
+            } else {
+                document.getElementById('poke-genus').textContent = 'Pokémon';
+                document.getElementById('poke-gen').textContent = '---';
+                document.getElementById('poke-flavor').textContent = 'Informações adicionais de espécie indisponíveis.';
+            }
+
+            // Update Sprite Display
+            updateSpriteDisplay();
+        }
+
+        function setSpriteMode(mode) {
+            spriteMode = mode;
+            ['artwork', 'home', 'animated'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if (m === mode) {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white shadow transition';
+                } else {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+                }
+            });
+            updateSpriteDisplay();
+        }
+
+        function toggleShiny() {
+            isShiny = !isShiny;
+            const btn = document.getElementById('btn-shiny');
+            if (isShiny) {
+                btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-yellow-400 text-slate-950 shadow transition';
+            } else {
+                btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-yellow-400 hover:bg-slate-700 border border-yellow-500/30 transition';
+            }
+            updateSpriteDisplay();
+        }
+
+        function updateSpriteDisplay() {
+            if (!currentPokemon) return;
+            const s = currentPokemon.sprites;
+            const imgEl = document.getElementById('poke-sprite');
+            let url = '';
+
+            if (spriteMode === 'artwork') {
+                url = isShiny 
+                    ? (s.other?.['official-artwork']?.front_shiny || s.front_shiny)
+                    : (s.other?.['official-artwork']?.front_default || s.front_default);
+                imgEl.classList.remove('pixelated', 'scale-125');
+            } else if (spriteMode === 'home') {
+                url = isShiny
+                    ? (s.other?.home?.front_shiny || s.other?.['official-artwork']?.front_shiny || s.front_shiny)
+                    : (s.other?.home?.front_default || s.other?.['official-artwork']?.front_default || s.front_default);
+                imgEl.classList.remove('pixelated', 'scale-125');
+            } else if (spriteMode === 'animated') {
+                const showdown = s.other?.showdown;
+                const genV = s.versions?.['generation-v']?.['black-white']?.animated;
+                if (isShiny) {
+                    url = showdown?.front_shiny || genV?.front_shiny || s.front_shiny || s.other?.['official-artwork']?.front_shiny;
+                } else {
+                    url = showdown?.front_default || genV?.front_default || s.front_default || s.other?.['official-artwork']?.front_default;
+                }
+                imgEl.classList.add('pixelated', 'scale-125');
+            }
+
+            if (!url) {
+                url = s.front_default || `https://placehold.co/200x200/1e293b/ffffff?text=${currentPokemon.name}`;
+            }
+
+            imgEl.src = url;
+        }
+
+        function renderBaseStats(stats) {
+            const container = document.getElementById('poke-stats');
+            let total = 0;
+
+            container.innerHTML = stats.map(s => {
+                const val = s.base_stat;
+                total += val;
+                const info = STAT_NAMES[s.stat.name] || { label: s.stat.name, short: s.stat.name, color: 'bg-blue-500' };
+                const percentage = Math.min(100, Math.round((val / 255) * 100));
+
+                return `
+                    <div class="flex items-center space-x-3 text-sm">
+                        <span class="w-20 font-semibold text-slate-400 text-xs uppercase">${info.label}</span>
+                        <span class="w-9 font-tech font-bold text-white text-base text-right">${val}</span>
+                        <div class="flex-1 h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                            <div class="h-full ${info.color} rounded-full stat-bar-fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="w-8 font-tech text-xs text-slate-500 text-right">255</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('stats-total').textContent = `TOTAL: ${total}`;
+        }
+
+        async function renderAbilities(abilities) {
+            const container = document.getElementById('poke-abilities');
+            container.innerHTML = abilities.map(a => {
+                const isHidden = a.is_hidden;
+                return `
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 transition hover:border-slate-700">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-sm text-white capitalize">${formatMoveOrAbilityName(a.ability.name)}</span>
+                            ${isHidden 
+                                ? '<span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Hidden (Oculta)</span>' 
+                                : '<span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">Normal</span>'
+                            }
+                        </div>
+                        <p id="ability-desc-${a.ability.name}" class="text-xs text-slate-400 leading-relaxed">
+                            Carregando efeito da habilidade...
+                        </p>
+                    </div>
+                `;
+            }).join('');
+
+            // Fetch descriptions for each ability asynchronously
+            for (const a of abilities) {
+                try {
+                    let abData;
+                    if (abilityCache.has(a.ability.name)) {
+                        abData = abilityCache.get(a.ability.name);
+                    } else {
+                        const res = await fetch(a.ability.url);
+                        if (res.ok) {
+                            abData = await res.json();
+                            abilityCache.set(a.ability.name, abData);
+                        }
+                    }
+
+                    if (abData) {
+                        const effectEntry = abData.effect_entries.find(e => e.language.name === 'en');
+                        const flavorEntry = abData.flavor_text_entries.find(f => f.language.name === 'en');
+                        const text = effectEntry ? effectEntry.short_effect : (flavorEntry ? flavorEntry.flavor_text : 'Sem descrição disponível.');
+                        const descEl = document.getElementById(`ability-desc-${a.ability.name}`);
+                        if (descEl) descEl.textContent = text.replace(/[\n\f\r]/g, ' ');
+                    }
+                } catch (e) {
+                    const descEl = document.getElementById(`ability-desc-${a.ability.name}`);
+                    if (descEl) descEl.textContent = 'Descrição indisponível.';
+                }
+            }
+        }
+
+        // ==========================================
+        // FORMAS ALTERNATIVAS E REGIONAIS (VARIETIES)
+        // ==========================================
+        function renderVarieties(species, currentPokemonName) {
+            const container = document.getElementById('poke-varieties-container');
+            const list = document.getElementById('poke-varieties-list');
+            if (!container || !list) return;
+
+            if (!species || !species.varieties || species.varieties.length <= 1) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            const baseName = species.name.toLowerCase();
+            list.innerHTML = species.varieties.map(v => {
+                const vName = v.pokemon.name;
+                const isSelected = (vName.toLowerCase() === currentPokemonName.toLowerCase());
+                const label = formatVarietyLabel(vName, baseName);
+
+                if (isSelected) {
+                    return `
+                        <button type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-yellow-400 text-slate-950 shadow flex items-center space-x-1 border border-yellow-300">
+                            <i class="fa-solid fa-check text-[10px]"></i>
+                            <span>${label}</span>
+                        </button>
+                    `;
+                } else {
+                    return `
+                        <button type="button" onclick="loadPokemon('${vName}')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition flex items-center space-x-1">
+                            <span>${label}</span>
+                        </button>
+                    `;
+                }
+            }).join('');
+
+            container.classList.remove('hidden');
+        }
+
+        function formatVarietyLabel(varietyName, baseName) {
+            if (varietyName.toLowerCase() === baseName.toLowerCase()) return 'Padrão';
+            let suffix = varietyName.toLowerCase().replace(baseName.toLowerCase(), '').replace(/^-/, '');
+            if (!suffix) return 'Padrão';
+
+            const formMap = {
+                'alola': 'Alola',
+                'galar': 'Galar',
+                'hisui': 'Hisui',
+                'paldea': 'Paldea',
+                'paldea-combat-breed': 'Paldea (Combate)',
+                'paldea-blaze-breed': 'Paldea (Fogo)',
+                'paldea-aqua-breed': 'Paldea (Água)',
+                'mega': 'Mega',
+                'mega-x': 'Mega X',
+                'mega-y': 'Mega Y',
+                'gmax': 'Gigantamax',
+                'starter': 'Inicial',
+                'totem': 'Totem',
+                'origin': 'Origem',
+                'altered': 'Alterada',
+                'incarnate': 'Encarnada',
+                'therian': 'Teriana',
+                'attack': 'Ataque',
+                'defense': 'Defesa',
+                'speed': 'Velocidade',
+                'heat': 'Calor (Heat)',
+                'wash': 'Lavagem (Wash)',
+                'frost': 'Gelo (Frost)',
+                'fan': 'Ventilador (Fan)',
+                'mow': 'Corte (Mow)',
+                'primal': 'Primitivo (Primal)',
+                'crowned': 'Coroado (Crowned)',
+                'hero': 'Herói',
+                'rapid-strike': 'Golpe Rápido',
+                'single-strike': 'Golpe Único',
+                'bloodmoon': 'Lua de Sangue',
+                'terastal': 'Teracristal',
+                'stellar': 'Estelar',
+                'mask': 'Máscara',
+                'hearthflame-mask': 'Máscara Fornalha',
+                'wellspring-mask': 'Máscara Nascente',
+                'cornerstone-mask': 'Máscara Alicerce',
+                'dusk': 'Crepúsculo (Dusk)',
+                'midnight': 'Meia-Noite',
+                'midday': 'Meio-Dia',
+                '10': 'Forma 10%',
+                '50': 'Forma 50%',
+                'complete': 'Forma 100%',
+                'unbound': 'Desacorrentado'
+            };
+
+            if (formMap[suffix]) return formMap[suffix];
+            return suffix.split('-').map(w => formMap[w] || (w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+        }
+
+        // ==========================================
+        // EFICÁCIA DEFENSIVA (FRAQUEZAS E RESISTÊNCIAS)
+        // ==========================================
+        const ALL_TYPES = [
+            'normal', 'fire', 'water', 'electric', 'grass', 'ice',
+            'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
+            'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
+        ];
+
+        function calculateTypeDefenses(types) {
+            const multipliers = {};
+            ALL_TYPES.forEach(t => {
+                let mult = 1.0;
+                types.forEach(pType => {
+                    const defName = pType.type.name;
+                    if (TYPE_DEFENSES[defName] && TYPE_DEFENSES[defName][t] !== undefined) {
+                        mult *= TYPE_DEFENSES[defName][t];
+                    }
+                });
+                multipliers[t] = mult;
+            });
+            return multipliers;
+        }
+
+        function renderTypeDefenses(types) {
+            const container = document.getElementById('type-defenses-container');
+            if (!container) return;
+
+            const mults = calculateTypeDefenses(types);
+            const superWeak = [];
+            const weak = [];
+            const resistant = [];
+            const superResistant = [];
+            const immune = [];
+            const normal = [];
+
+            ALL_TYPES.forEach(t => {
+                const val = mults[t];
+                if (val === 4) superWeak.push(t);
+                else if (val === 2) weak.push(t);
+                else if (val === 0.5) resistant.push(t);
+                else if (val === 0.25) superResistant.push(t);
+                else if (val === 0) immune.push(t);
+                else if (val === 1) normal.push(t);
+            });
+
+            let html = '';
+
+            // Fraquezas
+            if (superWeak.length > 0 || weak.length > 0) {
+                html += `
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-red-400 block mb-1.5 flex items-center">
+                            <i class="fa-solid fa-skull-crossbones mr-1.5"></i> Fraquezas (Dano Recebido Aumentado):
+                        </span>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${superWeak.map(t => renderTypeBadgeWithMultiplier(t, '4×', 'bg-red-950/80 text-red-200 border-red-500/60 font-black ring-1 ring-red-500/40')).join('')}
+                            ${weak.map(t => renderTypeBadgeWithMultiplier(t, '2×', 'bg-orange-950/60 text-orange-200 border-orange-500/40 font-bold')).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Resistências
+            if (resistant.length > 0 || superResistant.length > 0) {
+                html += `
+                    <div class="mt-3">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 block mb-1.5 flex items-center">
+                            <i class="fa-solid fa-shield-virus mr-1.5"></i> Resistências (Dano Reduzido):
+                        </span>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${superResistant.map(t => renderTypeBadgeWithMultiplier(t, '¼×', 'bg-teal-950/80 text-teal-200 border-teal-400/60 font-black ring-1 ring-teal-400/40')).join('')}
+                            ${resistant.map(t => renderTypeBadgeWithMultiplier(t, '½×', 'bg-emerald-950/60 text-emerald-200 border-emerald-500/40 font-bold')).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Imunidades
+            if (immune.length > 0) {
+                html += `
+                    <div class="mt-3">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-400 block mb-1.5 flex items-center">
+                            <i class="fa-solid fa-ban mr-1.5"></i> Imunidades (Dano Nulo):
+                        </span>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${immune.map(t => renderTypeBadgeWithMultiplier(t, '0×', 'bg-slate-950 text-slate-200 border-slate-700 font-bold')).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Neutros (expandível)
+            if (normal.length > 0) {
+                html += `
+                    <div class="mt-3 pt-2 border-t border-slate-800/60">
+                        <details class="group">
+                            <summary class="cursor-pointer text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 flex items-center justify-between list-none">
+                                <span class="flex items-center"><i class="fa-solid fa-circle-dot mr-1.5 text-slate-500"></i> Dano Neutro (1×) — ${normal.length} tipos</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] transition group-open:rotate-180"></i>
+                            </summary>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                ${normal.map(t => renderTypeBadgeWithMultiplier(t, '1×', 'bg-slate-900 text-slate-400 border-slate-800')).join('')}
+                            </div>
+                        </details>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderTypeBadgeWithMultiplier(typeKey, multiplierText, multiplierBadgeClass) {
+            const tInfo = TYPE_DATA[typeKey] || TYPE_DATA.unknown;
+            return `
+                <div class="inline-flex items-center rounded-lg border border-slate-800 overflow-hidden text-xs bg-slate-950 shadow-sm">
+                    <span class="${tInfo.bg} ${tInfo.text} px-2 py-0.5 font-bold uppercase text-[10px] tracking-wider">
+                        ${tInfo.name}
+                    </span>
+                    <span class="px-1.5 py-0.5 text-[11px] border-l ${multiplierBadgeClass}">
+                        ${multiplierText}
+                    </span>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // LINHA EVOLUTIVA (EVOLUTION CHAIN)
+        // ==========================================
+        async function renderEvolutionChain(species) {
+            const container = document.getElementById('evolution-chain-container');
+            const loader = document.getElementById('evo-loading');
+            if (!container) return;
+
+            if (!species || !species.evolution_chain?.url) {
+                container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Linha evolutiva indisponível para esta espécie.</p>';
+                return;
+            }
+
+            if (loader) loader.classList.remove('hidden');
+
+            try {
+                const chainUrl = species.evolution_chain.url;
+                let chainData;
+                if (evolutionCache.has(chainUrl)) {
+                    chainData = evolutionCache.get(chainUrl);
+                } else {
+                    const res = await fetch(chainUrl);
+                    if (res.ok) {
+                        chainData = await res.json();
+                        evolutionCache.set(chainUrl, chainData);
+                    }
+                }
+
+                if (!chainData || !chainData.chain) {
+                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Dados de evolução indisponíveis.</p>';
+                    return;
+                }
+
+                const currentBaseId = species.id;
+                container.innerHTML = renderChainNode(chainData.chain, currentBaseId);
+
+            } catch (err) {
+                console.warn('Erro ao carregar linha evolutiva:', err);
+                container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Não foi possível carregar a linha evolutiva.</p>';
+            } finally {
+                if (loader) loader.classList.add('hidden');
+            }
+        }
+
+        function renderChainNode(node, currentBaseId) {
+            const id = getPokemonIdFromUrl(node.species.url);
+            const isCurrent = (id === currentBaseId || node.species.name.toLowerCase() === currentPokemon?.name?.toLowerCase());
+            const cardHtml = renderEvolutionNodeCard(node.species.name, id, isCurrent);
+
+            if (!node.evolves_to || node.evolves_to.length === 0) {
+                return `<div class="flex flex-col items-center">${cardHtml}</div>`;
+            }
+
+            const nextEvolutionsHtml = node.evolves_to.map(child => {
+                const triggerLabel = formatEvolutionDetails(child.evolution_details);
+                return `
+                    <div class="flex flex-col md:flex-row items-center gap-3 my-2">
+                        <div class="flex flex-col items-center px-2 py-1 text-center">
+                            <span class="text-[10px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-1 rounded-lg max-w-[130px] leading-tight shadow-sm whitespace-normal">
+                                ${triggerLabel}
+                            </span>
+                            <i class="fa-solid fa-arrow-down md:fa-arrow-right text-emerald-400 text-sm mt-1"></i>
+                        </div>
+                        ${renderChainNode(child, currentBaseId)}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="flex flex-col md:flex-row items-center gap-3">
+                    <div class="flex flex-col items-center">${cardHtml}</div>
+                    <div class="flex flex-col gap-3 items-center md:items-start">
+                        ${nextEvolutionsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEvolutionNodeCard(name, id, isCurrent) {
+            const formattedId = `#${String(id).padStart(4, '0')}`;
+            const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+            const fallbackSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+            
+            return `
+                <button 
+                    type="button" 
+                    onclick="loadPokemon('${id}')" 
+                    title="Ver ${formatPokemonName(name)}" 
+                    class="group relative flex flex-col items-center bg-slate-950/70 hover:bg-slate-800/80 p-3 rounded-2xl border ${isCurrent ? 'border-yellow-400 ring-2 ring-yellow-400/30 bg-slate-900 shadow-[0_0_15px_rgba(250,204,21,0.2)]' : 'border-slate-800 hover:border-slate-600'} transition duration-200 min-w-[110px] sm:min-w-[130px] cursor-pointer"
+                >
+                    ${isCurrent ? '<span class="absolute -top-2.5 bg-yellow-400 text-slate-950 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full shadow tracking-wider">Atual</span>' : ''}
+                    <span class="font-tech text-xs font-bold text-slate-400 mb-1">${formattedId}</span>
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center my-1 relative">
+                        <img 
+                            src="${spriteUrl}" 
+                            alt="${name}" 
+                            class="max-w-full max-h-full object-contain drop-shadow transition-transform duration-200 group-hover:scale-110" 
+                            loading="lazy" 
+                            onerror="this.onerror=null; this.src='${fallbackSprite}';"
+                        >
+                    </div>
+                    <span class="font-bold text-xs sm:text-sm text-white capitalize text-center mt-1 group-hover:text-yellow-400 transition">
+                        ${formatPokemonName(name)}
+                    </span>
+                </button>
+            `;
+        }
+
+        function formatEvolutionDetails(details) {
+            if (!details || details.length === 0) return 'Evolução Especial';
+            const d = details[0];
+            const triggers = [];
+
+            if (d.trigger?.name === 'level-up') {
+                if (d.min_level) triggers.push(`Nv. ${d.min_level}`);
+                if (d.min_happiness) triggers.push(`Felicidade (${d.min_happiness})`);
+                if (d.min_affection) triggers.push(`Afeto alto`);
+                if (d.time_of_day) triggers.push(d.time_of_day === 'day' ? 'Durante o dia' : 'Durante a noite');
+                if (d.held_item) triggers.push(`Segurando ${formatItemName(d.held_item.name)}`);
+                if (d.known_move) triggers.push(`Com golpe ${formatMoveOrAbilityName(d.known_move.name)}`);
+                if (d.known_move_type) triggers.push(`Com golpe tipo ${TYPE_DATA[d.known_move_type.name]?.name || d.known_move_type.name}`);
+                if (d.location) triggers.push(`Em ${formatMoveOrAbilityName(d.location.name)}`);
+                if (d.needs_overworld_rain) triggers.push(`Com chuva`);
+                if (d.relative_physical_stats !== null && d.relative_physical_stats !== undefined) {
+                    if (d.relative_physical_stats === 1) triggers.push('Atq > Def');
+                    else if (d.relative_physical_stats === -1) triggers.push('Def > Atq');
+                    else if (d.relative_physical_stats === 0) triggers.push('Atq = Def');
+                }
+                if (triggers.length === 0) triggers.push('Subir de Nível');
+            } else if (d.trigger?.name === 'use-item') {
+                triggers.push(d.item ? formatItemName(d.item.name) : 'Usar Item');
+            } else if (d.trigger?.name === 'trade') {
+                if (d.held_item) {
+                    triggers.push(`Troca c/ ${formatItemName(d.held_item.name)}`);
+                } else if (d.trade_species) {
+                    triggers.push(`Troca por ${formatPokemonName(d.trade_species.name)}`);
+                } else {
+                    triggers.push('Troca');
+                }
+            } else if (d.trigger?.name === 'shed') {
+                triggers.push('Espaço livre na Pokébola');
+            } else if (d.trigger?.name === 'spin') {
+                triggers.push('Girar estilo');
+            } else if (d.trigger?.name === 'three-critical-hits') {
+                triggers.push('3 Críticos na batalha');
+            } else if (d.trigger?.name === 'take-damage') {
+                triggers.push('Passar sob arco após dano');
+            } else {
+                triggers.push(d.trigger?.name ? formatMoveOrAbilityName(d.trigger.name) : 'Evolução');
+            }
+
+            return triggers.join(' + ');
+        }
+
+        function formatItemName(name) {
+            if (!name) return 'Item';
+            return ITEM_TRANSLATIONS[name] || formatMoveOrAbilityName(name);
+        }
+
+        function getPokemonIdFromUrl(url) {
+            if (!url) return 1;
+            const parts = url.replace(/\/$/, '').split('/');
+            return parseInt(parts[parts.length - 1], 10) || 1;
+        }
+
+        // ==========================================
+        // CONTROLE DE VISUALIZAÇÃO (GOLPES vs META)
+        // ==========================================
+        let currentRightView = 'moves'; // 'moves' | 'meta'
+
+        function switchRightView(view) {
+            const btnMoves = document.getElementById('view-tab-moves');
+            const btnMeta = document.getElementById('view-tab-meta');
+            const containerMoves = document.getElementById('moves-view-container');
+            const containerMeta = document.getElementById('meta-view-container');
+
+            if (view === 'moves') {
+                btnMoves.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-red-600 text-white shadow';
+                btnMeta.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-slate-800 text-yellow-400 hover:bg-slate-700 border border-yellow-500/30';
+                containerMoves.classList.remove('hidden');
+                containerMeta.classList.add('hidden');
+                currentRightView = 'moves';
+            } else if (view === 'meta') {
+                btnMeta.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-yellow-400 text-slate-950 shadow border border-yellow-300';
+                btnMoves.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center justify-center space-x-2 bg-slate-800 text-slate-300 hover:bg-slate-700';
+                containerMeta.classList.remove('hidden');
+                containerMoves.classList.add('hidden');
+                currentRightView = 'meta';
+            }
+        }
+
+        // ==========================================
+        // META COMPETITIVO & GUIA ESTRATÉGICO
+        // ==========================================
+        async function checkAndRenderCompetitiveTab(pokemon) {
+            const metaTabBtn = document.getElementById('view-tab-meta');
+            if (!metaTabBtn) return;
+
+            let compData = null;
+            if (typeof getCompetitiveData === 'function') {
+                compData = await getCompetitiveData(pokemon.name);
+            }
+
+            // SE NÃO TIVER DADOS COMPETITIVOS (ex: Caterpie, Magikarp, Unown, etc.)
+            // A ABA NÃO APARECE!
+            if (!compData || !compData.sets || compData.sets.length === 0) {
+                metaTabBtn.classList.add('hidden');
+                if (currentRightView === 'meta') {
+                    switchRightView('moves');
+                }
+                return;
+            }
+
+            // SE TIVER DADOS -> A ABA APARECE!
+            metaTabBtn.classList.remove('hidden');
+            renderCompetitiveMetaView(pokemon, compData);
+        }
+
+        function renderCompetitiveMetaView(pokemon, compData) {
+            const headerContainer = document.getElementById('meta-header');
+            const setsContainer = document.getElementById('meta-sets-list');
+            if (!headerContainer || !setsContainer) return;
+
+            const pokeDisplayName = formatPokemonName(pokemon.name);
+
+            headerContainer.innerHTML = `
+                <div>
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="bg-yellow-400/20 text-yellow-300 border border-yellow-500/40 px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wider">
+                            ${compData.tier || 'Smogon / VGC'}
+                        </span>
+                        <span class="text-xs text-slate-400 font-semibold">&bull; ${compData.role || 'Competitivo'}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <i class="fa-solid fa-trophy text-yellow-400 mr-2.5"></i> Meta Competitivo de <span class="capitalize ml-1 text-yellow-400">${pokeDisplayName}</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Guia tático de movesets, distribuição de atributos (EVs/Nature) e planos de jogo para batalhas competitivas.
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center space-x-1.5">
+                        <i class="fa-solid fa-fire text-orange-400"></i>
+                        <span>${compData.sets.length} moveset${compData.sets.length > 1 ? 's' : ''} do meta</span>
+                    </span>
+                </div>
+            `;
+
+            setsContainer.innerHTML = compData.sets.map(set => {
+                const showdownText = typeof generateShowdownText === 'function' ? generateShowdownText(pokemon.name, set) : '';
+                const showdownEscaped = encodeURIComponent(showdownText);
+
+                return `
+                    <div class="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-lg transition space-y-4">
+                        <!-- Top Set Info & Export -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                            <div>
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="px-2 py-0.5 rounded bg-yellow-400/15 border border-yellow-500/30 text-yellow-300 text-[10px] font-bold uppercase tracking-wider">
+                                        ${set.format || 'Competitivo'}
+                                    </span>
+                                </div>
+                                <h4 class="text-lg font-extrabold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-crown text-amber-400 text-sm"></i>
+                                    <span>${set.name}</span>
+                                </h4>
+                            </div>
+                            <button 
+                                type="button" 
+                                onclick="copyShowdownSet('${showdownEscaped}', this)" 
+                                class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm active:scale-95 cursor-pointer"
+                                title="Copiar set para o Pokémon Showdown"
+                            >
+                                <i class="fa-solid fa-copy text-slate-400"></i>
+                                <span>Exportar Showdown</span>
+                            </button>
+                        </div>
+
+                        <!-- Specs Grid (Item, Ability, Nature, Tera) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                            <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5 flex items-center">
+                                    <i class="fa-solid fa-gem text-indigo-400 mr-1"></i> Item
+                                </span>
+                                <span class="font-bold text-white text-sm truncate block" title="${set.item}">${set.item}</span>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5 flex items-center">
+                                    <i class="fa-solid fa-dna text-emerald-400 mr-1"></i> Habilidade
+                                </span>
+                                <span class="font-bold text-white text-sm truncate block" title="${set.ability}">${set.ability}</span>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5 flex items-center">
+                                    <i class="fa-solid fa-compass text-amber-400 mr-1"></i> Natureza
+                                </span>
+                                <span class="font-bold text-white text-sm truncate block" title="${set.nature}">${set.nature}</span>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5 flex items-center">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-pink-400 mr-1"></i> Tera Type
+                                </span>
+                                <span class="font-bold text-white text-sm truncate block" title="${set.teraType || 'Padrão'}">${set.teraType || 'Padrão'}</span>
+                            </div>
+                        </div>
+
+                        <!-- EVs Spread -->
+                        <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                                <i class="fa-solid fa-sliders mr-1.5 text-cyan-400"></i> Distribuição de EVs:
+                            </span>
+                            <span class="font-tech font-bold text-slate-200 text-sm tracking-wide">${set.evs}</span>
+                        </div>
+
+                        <!-- 4 Meta Moves -->
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2 flex items-center">
+                                <i class="fa-solid fa-crosshairs text-red-400 mr-1.5"></i> Os 4 Golpes do Meta:
+                            </span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                ${set.moves.map(m => {
+                                    const moveTypeKey = m.type ? m.type.toLowerCase() : 'normal';
+                                    const tInfo = TYPE_DATA[moveTypeKey] || TYPE_DATA.unknown;
+                                    return `
+                                        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2.5">
+                                            <span class="${tInfo.bg} ${tInfo.text} px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider min-w-[55px] text-center shadow-sm">
+                                                ${tInfo.name}
+                                            </span>
+                                            <div class="flex-1 min-w-0">
+                                                <span class="font-bold text-white text-sm block truncate">${m.name}</span>
+                                                <span class="text-[11px] text-slate-400 block truncate">${m.role}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Why this set (Por Que Este Moveset?) -->
+                        <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3.5 space-y-1.5">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center">
+                                <i class="fa-solid fa-lightbulb mr-1.5 text-amber-400"></i> Por Que Este Moveset? (Análise Tática)
+                            </h5>
+                            <p class="text-xs text-amber-100/90 leading-relaxed">
+                                ${set.why}
+                            </p>
+                        </div>
+
+                        <!-- How to play (Como Jogar no Meta) -->
+                        <div class="bg-blue-950/20 border border-blue-500/30 rounded-xl p-3.5 space-y-1.5">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-blue-300 flex items-center">
+                                <i class="fa-solid fa-gamepad mr-1.5 text-blue-400"></i> Como Jogar no Meta (Estratégia & Dicas de Pilotagem)
+                            </h5>
+                            <div class="text-xs text-blue-100/90 leading-relaxed whitespace-pre-line">
+                                ${set.howToPlay}
+                            </div>
+                        </div>
+
+                        <!-- Onde Esta Build Pode Ser Usada (Compatibilidade de Jogos & Combos Quebrados) -->
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center">
+                                    <i class="fa-solid fa-map-location-dot text-indigo-400 mr-1.5"></i> Onde Esta Build Pode Ser Usada (Compatibilidade de Jogos)
+                                </h5>
+                                <span class="text-[10px] bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded font-tech font-bold">
+                                    Gerações & Regras
+                                </span>
+                            </div>
+
+                            <!-- Badges de Compatibilidade -->
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <div class="bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-medium shadow-sm">
+                                    <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+                                    <span><strong>Funciona em:</strong> ${set.playableIn || 'Scarlet & Violet (Gen IX), Pokémon Showdown'}</span>
+                                </div>
+                                ${set.incompatibleWith ? `
+                                    <div class="bg-rose-950/60 border border-rose-500/40 text-rose-300 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-medium shadow-sm">
+                                        <i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs"></i>
+                                        <span><strong>Incompatível em:</strong> ${set.incompatibleWith}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Caixa Especial: Combos Históricos Quebrados / Curiosidades de Jogos Antigos -->
+                            ${set.historicalNote ? `
+                                <div class="mt-2 pt-2.5 border-t border-slate-800/80 bg-slate-950/80 p-3 rounded-xl border border-purple-500/30 shadow-inner">
+                                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center mb-1">
+                                        <i class="fa-solid fa-bolt text-yellow-400 mr-1.5"></i> Combos Quebrados, Bugs ou Curiosidades Históricas:
+                                    </span>
+                                    <p class="text-xs text-purple-100/90 leading-relaxed">
+                                        ${set.historicalNote}
+                                    </p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function copyShowdownSet(encodedText, btn) {
+            const decoded = decodeURIComponent(encodedText);
+            if (!navigator.clipboard) {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = decoded;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            } else {
+                navigator.clipboard.writeText(decoded).catch(() => {});
+            }
+
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-400">Copiado!</span>';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 2000);
+        }
+
+        // ==========================================
+        // ADVANCED MOVES PROCESSING & FILTERING
+        // ==========================================
+        function setupVersionFilterOptions(moves) {
+            const select = document.getElementById('version-filter');
+            const availableVersions = new Set();
+
+            moves.forEach(m => {
+                m.version_group_details.forEach(vgd => {
+                    availableVersions.add(vgd.version_group.name);
+                });
+            });
+
+            // Sort versions by chronological release order
+            const sortedVersions = Array.from(availableVersions).sort((a, b) => {
+                const orderA = VERSION_GROUP_INFO[a]?.order || 99;
+                const orderB = VERSION_GROUP_INFO[b]?.order || 99;
+                return orderB - orderA; // Most recent games first
+            });
+
+            let optionsHtml = `<option value="all">Todas as Gerações / Todos os Jogos (${sortedVersions.length} versões)</option>`;
+            
+            sortedVersions.forEach(vKey => {
+                const info = VERSION_GROUP_INFO[vKey] || { label: formatMoveOrAbilityName(vKey), gen: 'Outro' };
+                optionsHtml += `<option value="${vKey}">${info.gen} — ${info.label}</option>`;
+            });
+
+            select.innerHTML = optionsHtml;
+
+            // Preserve user's selected version if the new Pokemon exists in it, otherwise reset to 'all'
+            if (currentVersionFilter !== 'all' && availableVersions.has(currentVersionFilter)) {
+                select.value = currentVersionFilter;
+            } else {
+                currentVersionFilter = 'all';
+                select.value = 'all';
+            }
+        }
+
+        function updateMethodCounts() {
+            if (!currentPokemon) return;
+            const counts = {
+                'level-up': 0,
+                'machine': 0,
+                'egg': 0,
+                'tutor': 0,
+                'all': 0
+            };
+
+            currentPokemon.moves.forEach(m => {
+                // Filter version details matching version filter
+                const matchingDetails = m.version_group_details.filter(d => 
+                    currentVersionFilter === 'all' || d.version_group.name === currentVersionFilter
+                );
+
+                if (matchingDetails.length > 0) {
+                    counts['all']++;
+                    const methodsInMove = new Set(matchingDetails.map(d => d.move_learn_method.name));
+                    if (methodsInMove.has('level-up')) counts['level-up']++;
+                    if (methodsInMove.has('machine')) counts['machine']++;
+                    if (methodsInMove.has('egg')) counts['egg']++;
+                    if (methodsInMove.has('tutor')) counts['tutor']++;
+                }
+            });
+
+            Object.keys(counts).forEach(k => {
+                const badge = document.getElementById(`count-${k}`);
+                if (badge) badge.textContent = counts[k];
+            });
+        }
+
+        function processAndRenderMoves() {
+            if (!currentPokemon) return;
+
+            const rawMoves = currentPokemon.moves;
+            const processed = [];
+
+            rawMoves.forEach(m => {
+                const moveName = m.move.name;
+                // Search filter check
+                if (currentMoveSearch && !moveName.replace(/-/g, ' ').includes(currentMoveSearch)) {
+                    return;
+                }
+
+                // Filter version group details by selected game version & method
+                const matchingDetails = m.version_group_details.filter(d => {
+                    const versionMatch = (currentVersionFilter === 'all' || d.version_group.name === currentVersionFilter);
+                    const methodMatch = (currentMethodFilter === 'all' || d.move_learn_method.name === currentMethodFilter);
+                    return versionMatch && methodMatch;
+                });
+
+                if (matchingDetails.length === 0) return;
+
+                // Determine primary level (for sorting level-up moves)
+                let minLevel = 999;
+                let maxLevel = 0;
+                matchingDetails.forEach(d => {
+                    if (d.move_learn_method.name === 'level-up') {
+                        if (d.level_learned_at < minLevel) minLevel = d.level_learned_at;
+                        if (d.level_learned_at > maxLevel) maxLevel = d.level_learned_at;
+                    }
+                });
+
+                processed.push({
+                    name: moveName,
+                    url: m.move.url,
+                    details: matchingDetails,
+                    sortLevel: minLevel === 999 ? 999 : minLevel
+                });
+            });
+
+            // Sort Moves: if Level-Up tab, sort by level ascending; otherwise sort alphabetically
+            if (currentMethodFilter === 'level-up') {
+                processed.sort((a, b) => a.sortLevel - b.sortLevel || a.name.localeCompare(b.name));
+            } else {
+                processed.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            filteredMovesList = processed;
+            displayedMovesCount = 0;
+
+            // Update total count badge
+            document.getElementById('moves-count-badge').textContent = `${filteredMovesList.length} golpe${filteredMovesList.length === 1 ? '' : 's'} encontrado${filteredMovesList.length === 1 ? '' : 's'}`;
+
+            // Clear container and render first batch
+            const container = document.getElementById('moves-list-container');
+            container.innerHTML = '';
+
+            if (filteredMovesList.length === 0) {
+                container.innerHTML = `
+                    <div class="py-16 text-center text-slate-500">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-600"></i>
+                        <p class="font-medium text-slate-400">Nenhum golpe encontrado para este filtro.</p>
+                        <p class="text-xs mt-1">Tente selecionar outra aba de aprendizado (ex: TM/HM ou Todos) ou mudar a versão do jogo.</p>
+                    </div>
+                `;
+                document.getElementById('load-more-container').classList.add('hidden');
+                return;
+            }
+
+            renderNextMoveBatch();
+        }
+
+        async function renderNextMoveBatch() {
+            const container = document.getElementById('moves-list-container');
+            const nextBatch = filteredMovesList.slice(displayedMovesCount, displayedMovesCount + MOVES_PAGE_SIZE);
+            displayedMovesCount += nextBatch.length;
+
+            // Update Load More button visibility
+            const remaining = filteredMovesList.length - displayedMovesCount;
+            const loadMoreContainer = document.getElementById('load-more-container');
+            if (remaining > 0) {
+                loadMoreContainer.classList.remove('hidden');
+                document.getElementById('remaining-moves-count').textContent = remaining;
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+
+            // 1. Insert Skeleton/Initial Move Cards immediately so UI is responsive
+            nextBatch.forEach(moveItem => {
+                const cardHtml = createMoveCardSkeleton(moveItem);
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // 2. Fetch detailed move attributes (Type, Category, Power, Accuracy, PP, Description) in parallel batches
+            const indicator = document.getElementById('batch-loading-indicator');
+            indicator.classList.remove('hidden');
+
+            await Promise.all(nextBatch.map(async (moveItem) => {
+                try {
+                    let moveData;
+                    if (moveCache.has(moveItem.name)) {
+                        moveData = moveCache.get(moveItem.name);
+                    } else {
+                        const res = await fetch(moveItem.url);
+                        if (res.ok) {
+                            moveData = await res.json();
+                            moveCache.set(moveItem.name, moveData);
+                        }
+                    }
+                    if (moveData) {
+                        populateMoveCardDetails(moveItem.name, moveData);
+                    }
+                } catch (err) {
+                    console.warn(`Erro ao carregar golpe ${moveItem.name}:`, err);
+                }
+            }));
+
+            indicator.classList.add('hidden');
+        }
+
+        function createMoveCardSkeleton(moveItem) {
+            // Summarize learn methods & versions
+            const gamesBadgesHtml = buildLearnSummaryBadges(moveItem.details);
+
+            // Primary Level Badge if applicable
+            let primaryBadge = '';
+            if (moveItem.sortLevel !== 999) {
+                const lvlText = moveItem.sortLevel <= 1 ? 'Nv. 1 / Evo' : `Nv. ${moveItem.sortLevel}`;
+                primaryBadge = `
+                    <div class="w-16 flex-shrink-0 bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 rounded-xl py-1.5 px-2 text-center">
+                        <span class="block text-[10px] uppercase font-semibold text-emerald-400/80">Aprende</span>
+                        <span class="font-tech font-bold text-sm">${lvlText}</span>
+                    </div>
+                `;
+            } else {
+                const firstMethod = moveItem.details[0]?.move_learn_method.name || 'machine';
+                const mInfo = METHOD_LABELS[firstMethod] || { label: firstMethod, icon: 'fa-star', badgeClass: 'bg-slate-800 text-slate-300 border-slate-700' };
+                primaryBadge = `
+                    <div class="w-16 flex-shrink-0 ${mInfo.badgeClass} border rounded-xl py-1.5 px-2 text-center flex flex-col items-center justify-center">
+                        <i class="fa-solid ${mInfo.icon} text-xs mb-0.5"></i>
+                        <span class="font-bold text-[10px] uppercase leading-tight">${mInfo.label}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div id="move-card-${moveItem.name}" class="bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 hover:border-slate-700 rounded-xl p-3.5 transition shadow-sm">
+                    <!-- Top Row: Level/Method, Move Name, Type, Damage Class, Stats -->
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        
+                        <div class="flex items-center space-x-3">
+                            ${primaryBadge}
+                            <div>
+                                <h4 class="font-bold text-white text-base capitalize tracking-tight">
+                                    ${formatMoveOrAbilityName(moveItem.name)}
+                                </h4>
+                                <!-- Type & Category Badges Placeholder -->
+                                <div id="move-badges-${moveItem.name}" class="flex items-center space-x-1.5 mt-1">
+                                    <span class="inline-block w-14 h-4 bg-slate-800 animate-pulse rounded"></span>
+                                    <span class="inline-block w-16 h-4 bg-slate-800 animate-pulse rounded"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Move Power, Accuracy, PP -->
+                        <div id="move-stats-${moveItem.name}" class="flex items-center space-x-2 text-center">
+                            <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[54px]">
+                                <span class="text-[10px] text-slate-400 uppercase block">Poder</span>
+                                <span class="font-tech font-bold text-sm text-slate-500">...</span>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[54px]">
+                                <span class="text-[10px] text-slate-400 uppercase block">Prec.</span>
+                                <span class="font-tech font-bold text-sm text-slate-500">...</span>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[46px]">
+                                <span class="text-[10px] text-slate-400 uppercase block">PP</span>
+                                <span class="font-tech font-bold text-sm text-slate-500">...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Move Effect Description -->
+                    <div class="mt-2.5 pt-2 border-t border-slate-800/60">
+                        <p id="move-desc-${moveItem.name}" class="text-xs text-slate-300 leading-relaxed">
+                            <span class="text-slate-500 italic">Buscando descrição do golpe...</span>
+                        </p>
+                    </div>
+
+                    <!-- Games & Levels Details Bar -->
+                    <div class="mt-2.5 pt-2 border-t border-slate-900 flex flex-wrap items-center gap-1.5">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-1">
+                            <i class="fa-solid fa-gamepad mr-1"></i>Jogos e Níveis:
+                        </span>
+                        ${gamesBadgesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildLearnSummaryBadges(details) {
+            // Sort details by version order
+            const sorted = [...details].sort((a, b) => {
+                const oA = VERSION_GROUP_INFO[a.version_group.name]?.order || 99;
+                const oB = VERSION_GROUP_INFO[b.version_group.name]?.order || 99;
+                return oA - oB;
+            });
+
+            // Group identical (version_group + method + level)
+            const maxVisible = 8;
+            const badges = sorted.map(d => {
+                const vName = VERSION_GROUP_INFO[d.version_group.name]?.label || d.version_group.name;
+                const mName = d.move_learn_method.name;
+                let methodTag = '';
+
+                if (mName === 'level-up') {
+                    methodTag = `<strong class="text-emerald-400">Nv.${d.level_learned_at}</strong>`;
+                } else if (mName === 'machine') {
+                    methodTag = `<strong class="text-purple-400">TM/HM</strong>`;
+                } else if (mName === 'egg') {
+                    methodTag = `<strong class="text-pink-400">Egg</strong>`;
+                } else if (mName === 'tutor') {
+                    methodTag = `<strong class="text-amber-400">Tutor</strong>`;
+                } else {
+                    methodTag = `<strong class="text-cyan-400">${mName}</strong>`;
+                }
+
+                return `<span class="text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md whitespace-nowrap">${vName}: ${methodTag}</span>`;
+            });
+
+            if (badges.length <= maxVisible) {
+                return badges.join('');
+            }
+
+            const visiblePart = badges.slice(0, maxVisible).join('');
+            const hiddenPart = badges.slice(maxVisible).join('');
+            const extraCount = badges.length - maxVisible;
+
+            return `
+                ${visiblePart}
+                <button type="button" onclick="this.nextElementSibling.classList.remove('hidden'); this.remove();" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-yellow-400 font-semibold px-2 py-0.5 rounded-md transition">
+                    +${extraCount} jogos...
+                </button>
+                <span class="hidden contents">${hiddenPart}</span>
+            `;
+        }
+
+        function populateMoveCardDetails(moveName, moveData) {
+            // 1. Type & Damage Category Badges
+            const badgesEl = document.getElementById(`move-badges-${moveName}`);
+            if (badgesEl) {
+                const tInfo = TYPE_DATA[moveData.type?.name] || TYPE_DATA.unknown;
+                const dClassKey = moveData.damage_class?.name || 'status';
+                const dInfo = DAMAGE_CLASS_INFO[dClassKey] || DAMAGE_CLASS_INFO.status;
+
+                badgesEl.innerHTML = `
+                    <span class="${tInfo.bg} ${tInfo.text} px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                        ${tInfo.name}
+                    </span>
+                    <span title="${dInfo.desc}" class="${dInfo.classes} border px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider inline-flex items-center space-x-1">
+                        <i class="fa-solid ${dInfo.icon} text-[9px]"></i>
+                        <span>${dInfo.label}</span>
+                    </span>
+                    ${moveData.priority !== 0 ? `
+                        <span title="Prioridade de velocidade no turno" class="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                            Prioridade ${moveData.priority > 0 ? '+' + moveData.priority : moveData.priority}
+                        </span>
+                    ` : ''}
+                `;
+            }
+
+            // 2. Power, Accuracy, PP
+            const statsEl = document.getElementById(`move-stats-${moveName}`);
+            if (statsEl) {
+                const power = moveData.power !== null ? moveData.power : '—';
+                const acc = moveData.accuracy !== null ? `${moveData.accuracy}%` : '—';
+                const pp = moveData.pp !== null ? moveData.pp : '—';
+
+                statsEl.innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[54px]">
+                        <span class="text-[10px] text-slate-400 uppercase block">Poder</span>
+                        <span class="font-tech font-bold text-sm ${moveData.power ? 'text-orange-400' : 'text-slate-500'}">${power}</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[54px]">
+                        <span class="text-[10px] text-slate-400 uppercase block">Prec.</span>
+                        <span class="font-tech font-bold text-sm ${moveData.accuracy ? 'text-cyan-400' : 'text-slate-500'}">${acc}</span>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg min-w-[46px]">
+                        <span class="text-[10px] text-slate-400 uppercase block">PP</span>
+                        <span class="font-tech font-bold text-sm text-white">${pp}</span>
+                    </div>
+                `;
+            }
+
+            // 3. Detailed Description (Effect Entry + Flavor Text)
+            const descEl = document.getElementById(`move-desc-${moveName}`);
+            if (descEl) {
+                const effectEntry = moveData.effect_entries?.find(e => e.language.name === 'pt' || e.language.name === 'pt-BR')
+                                 || moveData.effect_entries?.find(e => e.language.name === 'en');
+                
+                const flavorEntry = moveData.flavor_text_entries?.find(f => f.language.name === 'pt' || f.language.name === 'pt-BR')
+                                 || moveData.flavor_text_entries?.slice().reverse().find(f => f.language.name === 'en');
+
+                let effectText = '';
+                if (effectEntry) {
+                    effectText = effectEntry.short_effect || effectEntry.effect;
+                    if (moveData.effect_chance) {
+                        effectText = effectText.replace(/\$effect_chance/g, moveData.effect_chance);
+                    }
+                }
+
+                let flavorText = flavorEntry ? flavorEntry.flavor_text.replace(/[\n\f\r]/g, ' ') : '';
+
+                if (effectText && flavorText && effectText.toLowerCase() !== flavorText.toLowerCase()) {
+                    descEl.innerHTML = `
+                        <span class="text-slate-200 font-medium">${flavorText}</span>
+                        <span class="block text-[11px] text-slate-400 mt-0.5"><i class="fa-solid fa-circle-info text-slate-500 mr-1"></i><strong>Efeito Mecânico:</strong> ${effectText}</span>
+                    `;
+                } else {
+                    descEl.textContent = effectText || flavorText || 'Sem descrição detalhada registrada para este golpe.';
+                }
+            }
+        }
+
+        // ==========================================
+        // HELPER FORMATTING FUNCTIONS
+        // ==========================================
+        function formatPokemonName(name) {
+            if (!name) return '';
+            return name.replace(/-/g, ' ');
+        }
+
+        function formatMoveOrAbilityName(name) {
+            if (!name) return '';
+            return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+
+        // ==========================================
+        // ONDE ENCONTRAR & CAPTURAR (ENCOUNTERS)
+        // ==========================================
+        let currentEncountersData = null;
+
+        async function renderPokemonEncounters(pokemon, species) {
+            const countBadge = document.getElementById('encounter-games-count');
+            const uniqueGuideEl = document.getElementById('unique-capture-guide');
+            const uniqueGuideText = document.getElementById('unique-capture-text');
+            const filterSelect = document.getElementById('encounter-game-filter');
+            const listContainer = document.getElementById('encounters-list-container');
+            const unobtainableBox = document.getElementById('unobtainable-games-box');
+            const unobtainableText = document.getElementById('unobtainable-games-text');
+
+            if (!listContainer) return;
+
+            // 1. Reset / Loading state
+            if (countBadge) countBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Carregando...';
+            if (uniqueGuideEl) uniqueGuideEl.classList.add('hidden');
+            if (unobtainableBox) unobtainableBox.classList.add('hidden');
+            listContainer.innerHTML = `
+                <div class="text-center py-6 text-slate-500 text-xs">
+                    <i class="fa-solid fa-spinner fa-spin text-emerald-400 text-base mb-2 block"></i>
+                    Buscando rotas e métodos de captura de ${formatPokemonName(pokemon.name)}...
+                </div>
+            `;
+            if (filterSelect) {
+                filterSelect.innerHTML = '<option value="all">Todos os Jogos Disponíveis</option>';
+            }
+
+            try {
+                if (typeof fetchAndProcessEncounters !== 'function') {
+                    listContainer.innerHTML = '<p class="text-slate-500 text-xs py-4 text-center">Módulo de encontros não carregado.</p>';
+                    return;
+                }
+
+                const data = await fetchAndProcessEncounters(pokemon);
+                currentEncountersData = data;
+
+                // 2. Count badge
+                if (countBadge) {
+                    if (data.gamesFound && data.gamesFound.length > 0) {
+                        countBadge.textContent = `${data.gamesFound.length} ${data.gamesFound.length === 1 ? 'jogo' : 'jogos'}`;
+                    } else if (data.uniqueGuide) {
+                        countBadge.textContent = 'Encontro Único';
+                    } else {
+                        countBadge.textContent = 'Especial / Evento';
+                    }
+                }
+
+                // 3. Unique capture banner
+                if (data.uniqueGuide) {
+                    if (uniqueGuideText) uniqueGuideText.textContent = data.uniqueGuide;
+                    if (uniqueGuideEl) uniqueGuideEl.classList.remove('hidden');
+                } else {
+                    if (uniqueGuideEl) uniqueGuideEl.classList.add('hidden');
+                }
+
+                // 4. Game Filter Select
+                if (filterSelect) {
+                    filterSelect.innerHTML = `<option value="all">Todos os Jogos Disponíveis (${data.gamesFound.length})</option>`;
+                    data.gamesFound.forEach(gKey => {
+                        const gInfo = (typeof GAME_VERSION_INFO !== 'undefined' && GAME_VERSION_INFO[gKey]) || { label: gKey, gen: '' };
+                        const opt = document.createElement('option');
+                        opt.value = gKey;
+                        opt.textContent = `${gInfo.label} (${gInfo.gen})`;
+                        filterSelect.appendChild(opt);
+                    });
+                }
+
+                // 5. Render Encounters List
+                renderEncountersList(data, 'all');
+
+                // 6. Missing / Unobtainable in games
+                if (unobtainableBox && unobtainableText) {
+                    if (data.missingGames && data.missingGames.length > 0) {
+                        unobtainableBox.classList.remove('hidden');
+                        renderMissingGamesBadges(data.missingGames, unobtainableText);
+                    } else {
+                        unobtainableBox.classList.add('hidden');
+                    }
+                }
+
+            } catch (err) {
+                console.error('Erro ao renderizar encontros:', err);
+                listContainer.innerHTML = `
+                    <div class="text-center py-4 text-slate-500 text-xs">
+                        <i class="fa-solid fa-triangle-exclamation text-yellow-500 mb-1 block"></i>
+                        Não foi possível carregar as rotas deste Pokémon no momento.
+                    </div>
+                `;
+            }
+        }
+
+        function filterEncountersByGame() {
+            const filterSelect = document.getElementById('encounter-game-filter');
+            if (!filterSelect || !currentEncountersData) return;
+            const selected = filterSelect.value;
+            renderEncountersList(currentEncountersData, selected);
+        }
+
+        function renderEncountersList(data, selectedGame) {
+            const listContainer = document.getElementById('encounters-list-container');
+            if (!listContainer) return;
+
+            if (!data || !data.gamesFound || data.gamesFound.length === 0) {
+                if (data && data.uniqueGuide) {
+                    listContainer.innerHTML = `
+                        <div class="text-center py-5 px-3 bg-slate-800/40 rounded-xl border border-dashed border-amber-500/30">
+                            <i class="fa-solid fa-crown text-amber-400 text-base mb-1.5 block"></i>
+                            <p class="font-bold text-amber-300 text-xs">Espécie Única / Lendária</p>
+                            <p class="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
+                                Não aparece em rotas de grama comum. Consulte o guia de captura dourado logo acima para saber onde e como despertá-lo!
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    listContainer.innerHTML = `
+                        <div class="text-center py-5 px-3 bg-slate-800/40 rounded-xl border border-dashed border-slate-700">
+                            <i class="fa-solid fa-gift text-cyan-400 text-base mb-1.5 block"></i>
+                            <p class="font-bold text-slate-300 text-xs">Sem Encontros Selvagens Tradicionais</p>
+                            <p class="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
+                                Esta espécie normalmente é obtida através de presente inicial, evento de distribuição, evolução ou transferência via Pokémon HOME.
+                            </p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            const gamesToRender = (selectedGame === 'all')
+                ? data.gamesFound
+                : data.gamesFound.filter(g => g === selectedGame);
+
+            if (gamesToRender.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-4 text-slate-500 text-xs">
+                        Nenhum local cadastrado para a versão selecionada.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            gamesToRender.forEach(gKey => {
+                const gInfo = (typeof GAME_VERSION_INFO !== 'undefined' && GAME_VERSION_INFO[gKey]) || {
+                    label: gKey,
+                    gen: 'Série Principal',
+                    badge: 'bg-slate-800 text-slate-300 border-slate-700'
+                };
+                const locs = data.byGame[gKey] || [];
+
+                html += `
+                    <div class="border border-slate-800/90 rounded-xl bg-slate-950/60 p-2.5">
+                        <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800/60">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${gInfo.badge}">
+                                    ${gInfo.label}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-tech font-semibold">
+                                    ${gInfo.gen}
+                                </span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-tech font-bold">
+                                ${locs.length} ${locs.length === 1 ? 'local' : 'locais'}
+                            </span>
+                        </div>
+                        <div class="space-y-1.5">
+                `;
+
+                locs.forEach(loc => {
+                    const mInfo = (typeof ENCOUNTER_METHODS_PT !== 'undefined' && ENCOUNTER_METHODS_PT[loc.method]) || {
+                        label: loc.method,
+                        icon: 'fa-location-crosshairs',
+                        badgeClass: 'bg-slate-800 text-slate-300 border-slate-700'
+                    };
+
+                    const lvlText = (loc.minLevel === loc.maxLevel)
+                        ? `Nv. ${loc.minLevel}`
+                        : `Nv. ${loc.minLevel}–${loc.maxLevel}`;
+
+                    let chanceColor = 'text-yellow-400';
+                    if (loc.totalChance >= 50) chanceColor = 'text-emerald-400';
+                    else if (loc.totalChance >= 20) chanceColor = 'text-cyan-400';
+                    else if (loc.totalChance < 10) chanceColor = 'text-orange-400';
+                    if (loc.isUnique || loc.method === 'pokeflute' || loc.method === 'static') chanceColor = 'text-amber-400';
+
+                    html += `
+                        <div class="bg-slate-900/90 rounded-lg p-2 border border-slate-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 hover:border-slate-700 transition">
+                            <div class="flex-1 min-w-0 pr-1">
+                                <div class="font-medium text-slate-200 text-xs truncate flex items-center" title="${loc.location}">
+                                    <i class="fa-solid fa-location-dot text-emerald-400 mr-1.5 text-[10px] shrink-0"></i>
+                                    <span class="truncate">${loc.location}</span>
+                                </div>
+                                <div class="flex items-center flex-wrap gap-1 mt-1">
+                                    <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${mInfo.badgeClass}">
+                                        <i class="fa-solid ${mInfo.icon} text-[9px]"></i>
+                                        <span>${mInfo.label}</span>
+                                    </span>
+                                    ${loc.isUnique ? `
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                            <i class="fa-solid fa-gem mr-0.5"></i> Único
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-1.5 shrink-0 self-end sm:self-center">
+                                <div class="bg-slate-800 border border-slate-700/80 px-2 py-0.5 rounded text-center">
+                                    <span class="text-[8px] text-slate-400 block uppercase font-semibold">Nível</span>
+                                    <span class="font-tech font-bold text-white text-[11px]">${lvlText}</span>
+                                </div>
+                                <div class="bg-slate-800 border border-slate-700/80 px-2 py-0.5 rounded text-center min-w-[42px]">
+                                    <span class="text-[8px] text-slate-400 block uppercase font-semibold">Taxa</span>
+                                    <span class="font-tech font-bold ${chanceColor} text-[11px]">${loc.totalChance}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        function renderMissingGamesBadges(missingGames, container) {
+            const visiblePills = [];
+            const hiddenPills = [];
+            const maxVisible = 8;
+
+            const filtered = missingGames.filter(k => typeof GAME_VERSION_INFO !== 'undefined' && GAME_VERSION_INFO[k]);
+
+            filtered.forEach((gKey, idx) => {
+                const gInfo = GAME_VERSION_INFO[gKey];
+                const pillHtml = `<span title="Não encontrado na natureza em ${gInfo.label}" class="text-[9px] bg-slate-800 border border-slate-700/70 text-slate-400 px-1.5 py-0.5 rounded font-medium">${gInfo.label}</span>`;
+                if (idx < maxVisible) {
+                    visiblePills.push(pillHtml);
+                } else {
+                    hiddenPills.push(pillHtml);
+                }
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-slate-500 italic">Disponível em praticamente todos os jogos principais da franquia!</span>';
+                return;
+            }
+
+            if (hiddenPills.length > 0) {
+                container.innerHTML = `
+                    ${visiblePills.join('')}
+                    <button type="button" onclick="this.nextElementSibling.classList.remove('hidden'); this.remove();" class="text-[9px] bg-slate-800 hover:bg-slate-700 text-yellow-400 font-semibold px-2 py-0.5 rounded transition">
+                        +${hiddenPills.length} outros...
+                    </button>
+                    <span class="hidden contents">${hiddenPills.join('')}</span>
+                `;
+            } else {
+                container.innerHTML = visiblePills.join('');
+            }
+        }
+    </script>
+</body>
+</html>
