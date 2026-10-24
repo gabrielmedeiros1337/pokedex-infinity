@@ -2,7 +2,7 @@
 
 > **Enciclopédia Suprema Pokémon** com busca em tempo real, visualização de status base, cálculo de fraquezas e eficácia defensiva, guia tático de **Meta Competitivo (Smogon / VGC)** e **Tabela de Onde Encontrar & Capturar** por versão de jogo.
 
-[![GitHub Pages](https://img.shields.io/badge/Demo%20Online-GitHub%20Pages-28a745?style=for-the-badge&logo=github)](https://gabrielmedeiros1337.github.io/pokedex/)
+[![GitHub Pages](https://img.shields.io/badge/Demo%20Online-GitHub%20Pages-28a745?style=for-the-badge&logo=github)](https://gabrielmedeiros1337.github.io/pokedex-infinity/)
 [![PokéAPI](https://img.shields.io/badge/Data%20Source-Pok%C3%A9API%20v2-ef4444?style=for-the-badge&logo=pokemon)](https://pokeapi.co/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](#)
 
@@ -11,7 +11,7 @@
 ## ⚡ Demonstração Online
 
 Acesse o projeto publicado diretamente em:
-👉 **[https://gabrielmedeiros1337.github.io/pokedex/](https://gabrielmedeiros1337.github.io/pokedex/)**
+👉 **[https://gabrielmedeiros1337.github.io/pokedex-infinity/](https://gabrielmedeiros1337.github.io/pokedex-infinity/)**
 
 ---
 
@@ -55,8 +55,8 @@ Acesse o projeto publicado diretamente em:
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/gabrielmedeiros1337/pokedex.git
-   cd pokedex
+   git clone https://github.com/gabrielmedeiros1337/pokedex-infinity.git
+   cd pokedex-infinity
    ```
 
 2. Abra o arquivo `index.html` diretamente em seu navegador preferido ou use uma extensão de servidor local (como *Live Server* do VS Code).
@@ -68,3 +68,4 @@ Acesse o projeto publicado diretamente em:
 Desenvolvido com dedicação por **Gabriel Medeiros**.
 
 * GitHub: [@gabrielmedeiros1337](https://github.com/gabrielmedeiros1337)
+* Repositório: [gabrielmedeiros1337/pokedex-infinity](https://github.com/gabrielmedeiros1337/pokedex-infinity)
